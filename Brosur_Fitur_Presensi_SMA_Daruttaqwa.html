@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Panduan & Daftar Fitur Baru - Sistem Presensi IoT SMA Daruttaqwa</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 9mm 11mm 9mm 11mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+      background: #ffffff;
+      line-height: 1.4;
+      font-size: 10pt;
+    }
+
+    .page {
+      height: 279mm;
+      max-height: 279mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+    .page:last-child {
+      page-break-after: avoid;
+    }
+
+    /* Header Banner */
+    .doc-header {
+      border-bottom: 2px solid #004532;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .doc-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-emblem {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #004532;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 3px 10px rgba(0, 69, 50, 0.25);
+    }
+    .brand-title h1 {
+      font-size: 15pt;
+      font-weight: 800;
+      color: #004532;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .brand-title p {
+      font-size: 8.2pt;
+      color: #006c49;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 1px;
+    }
+    .doc-meta {
+      text-align: right;
+    }
+    .badge-official {
+      display: inline-block;
+      background: #d1fae5;
+      color: #004532;
+      border: 1px solid #a7f3d0;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 7.8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .doc-meta .date-text {
+      font-size: 8pt;
+      color: #64748b;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* Executive Hero Box */
+    .hero-summary {
+      background: linear-gradient(135deg, #004532 0%, #065f46 100%);
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 14px rgba(0, 69, 50, 0.18);
+      flex-shrink: 0;
+    }
+    .hero-summary h2 {
+      font-size: 11pt;
+      font-weight: 800;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #ffffff;
+    }
+    .hero-summary p {
+      font-size: 8.8pt;
+      color: #d1fae5;
+      line-height: 1.45;
+    }
+
+    /* Section Headings */
+    .section-title {
+      font-size: 11pt;
+      font-weight: 800;
+      color: #004532;
+      margin: 8px 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-left: 4px solid #006c49;
+      padding-left: 8px;
+      flex-shrink: 0;
+    }
+    .section-title i {
+      font-size: 10.5pt;
+      color: #006c49;
+    }
+
+    /* Grid of Feature Cards */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    .feature-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 11px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .feature-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .feature-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #006c49;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .feature-icon-box.accent-orange {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #b45309;
+    }
+    .feature-icon-box.accent-blue {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1d4ed8;
+    }
+    .feature-icon-box.accent-purple {
+      background: #faf5ff;
+      border-color: #e9d5ff;
+      color: #7e22ce;
+    }
+
+    .feature-card-title {
+      font-size: 9.6pt;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .feature-card-desc {
+      font-size: 8.3pt;
+      color: #475569;
+      line-height: 1.4;
+      margin-top: 3px;
+    }
+    .feature-pill-benefit {
+      margin-top: 7px;
+      padding: 3px 7px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      font-size: 7.7pt;
+      color: #004532;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .feature-pill-benefit i {
+      color: #059669;
+      font-size: 8pt;
+    }
+
+    /* Highlight Comparison Table */
+    .table-container {
+      margin: 8px 0 10px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    table.compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.2pt;
+      text-align: left;
+    }
+    table.compare-table th {
+      background: #004532;
+      color: #ffffff;
+      padding: 7px 10px;
+      font-weight: 700;
+      border-bottom: 2px solid #006c49;
+    }
+    table.compare-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+      vertical-align: middle;
+      line-height: 1.35;
+    }
+    table.compare-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    table.compare-table tr:last-child td {
+      border-bottom: none;
+    }
+    .tag-old {
+      display: inline-block;
+      padding: 1px 6px;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 4px;
+      font-size: 7.4pt;
+      font-weight: 700;
+    }
+    .tag-new {
+      display: inline-block;
+      padding: 1px 6px;
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: 4px;
+      font-size: 7.4pt;
+      font-weight: 700;
+    }
+
+    /* Flow Step Pills */
+    .flow-steps {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    .flow-step-item {
+      flex: 1;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+    .flow-number {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #004532;
+      color: #ffffff;
+      font-size: 8pt;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 4px auto;
+    }
+    .flow-title {
+      font-size: 8.3pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 1px;
+    }
+    .flow-desc {
+      font-size: 7.4pt;
+      color: #64748b;
+      line-height: 1.25;
+    }
+
+    /* Callout Alert */
+    .callout-box {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-left: 4px solid #006c49;
+      border-radius: 9px;
+      padding: 8px 12px;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .callout-box h4 {
+      font-size: 8.8pt;
+      font-weight: 800;
+      color: #004532;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .callout-box p {
+      font-size: 8pt;
+      color: #166534;
+      line-height: 1.35;
+    }
+
+    /* Footer Note */
+    .doc-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7.8pt;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== HALAMAN 1: PENGANTAR & FITUR ALAT ABSEN ==================== -->
+  <div class="page">
+    <div>
+      <div class="doc-header">
+        <div class="doc-brand">
+          <div class="brand-emblem">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div class="brand-title">
+            <h1>SMA DARUTTAQWA</h1>
+            <p>Sistem Presensi Digital & Alat Absen IoT Berbasis Google Sheets</p>
+          </div>
+        </div>
+        <div class="doc-meta">
+          <span class="badge-official"><i class="fa-solid fa-shield-check"></i> Panduan Resmi Klien</span>
+          <div class="date-text">Edisi Pembaruan: September 2026</div>
+        </div>
+      </div>
+
+      <!-- Hero Summary -->
+      <div class="hero-summary">
+        <h2><i class="fa-solid fa-sparkles"></i> Solusi Absensi Modern, Bebas Ribet & Akurat</h2>
+        <p>
+          Generasi baru sistem presensi yang menggabungkan <strong>Alat Absen IoT (Sidik Jari & RFID)</strong> dengan <strong>Dashboard Web Interaktif</strong>. Pendaftaran guru & kartu kini sangat mudah langsung lewat web tanpa perlu akses IP alat, sistem bebas bentrok ID, serta rekapitulasi data otomatis lengkap dengan persentase kehadiran.
+        </p>
+      </div>
+
+      <!-- Alur Kerja Sederhana -->
+      <div class="section-title">
+        <i class="fa-solid fa-route"></i>
+        <span>Cara Kerja Sistem yang Sangat Sederhana (3 Detik Beres)</span>
+      </div>
+
+      <div class="flow-steps">
+        <div class="flow-step-item">
+          <div class="flow-number">1</div>
+          <div class="flow-title">Guru Datang & Tap</div>
+          <div class="flow-desc">Guru menempelkan jari / kartu di mesin absen sekolah.</div>
+        </div>
+        <div class="flow-step-item">
+          <div class="flow-number">2</div>
+          <div class="flow-title">Mesin Verifikasi</div>
+          <div class="flow-desc">Layar menyapa nama guru & buzzer berbunyi "bip" tanda sukses.</div>
+        </div>
+        <div class="flow-step-item">
+          <div class="flow-number">3</div>
+          <div class="flow-title">Langsung Masuk Cloud</div>
+          <div class="flow-desc">Data jam detik tersimpan otomatis di Google Spreadsheet.</div>
+        </div>
+        <div class="flow-step-item">
+          <div class="flow-number">4</div>
+          <div class="flow-title">Terlihat di HP / Web</div>
+          <div class="flow-desc">Kepala Sekolah & Guru bisa langsung melihat laporannya.</div>
+        </div>
+      </div>
+
+      <!-- Fitur Bagian 1: Alat Absen Fisik -->
+      <div class="section-title">
+        <i class="fa-solid fa-microchip"></i>
+        <span>Fitur-Fitur Baru pada Mesin Alat Absen (Hardware IoT)</span>
+      </div>
+
+      <div class="feature-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box">
+              <i class="fa-solid fa-fingerprint"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Dua Sensor Pengenal (Sidik Jari & Kartu)</div>
+              <div class="feature-card-desc">
+                Guru bebas memilih cara absen: cukup tempelkan sidik jari atau gunakan kartu (RFID / e-KTP). Sensor optik R307 cepat membaca meski jari agak berkeringat.
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: Fleksibel, jika jari basah/terluka bisa pakai kartu.</span>
+          </div>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box accent-orange">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Pencegah Salah Pulang (Tap Konfirmasi)</div>
+              <div class="feature-card-desc">
+                Mencegah guru yang baru datang tidak sengaja terabsen pulang. Tap pertama = <strong>Masuk</strong>. Untuk absen pulang, mesin meminta tap 2 kali sebagai konfirmasi.
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: Jam kepulangan 100% akurat, tidak ada salah pencet.</span>
+          </div>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box accent-blue">
+              <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Daftar Guru Praktis via Web (Tanpa Buka IP Alat)</div>
+              <div class="feature-card-desc">
+                Dulu di sistem lama, mendaftarkan guru harus membuka alamat IP alat (<code>192.168.x.x</code>) yang rumit dan wajib satu WiFi. Sekarang cukup dari Web Dashboard di HP/Laptop, alat otomatis tersinkron.
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: Pendaftaran cepat kapan pun tanpa perlu paham teknis IP.</span>
+          </div>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box accent-purple">
+              <i class="fa-solid fa-shield-virus"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Sistem Bebas Bentrok ID & Multi-Mesin</div>
+              <div class="feature-card-desc">
+                Pada sistem lama, nomor ID kartu/jari rawan bentrok atau menimpa guru lain. Sistem baru dilengkapi alokasi ID unik otomatis, aman digunakan pada <strong>Mesin A</strong> maupun <strong>Mesin B</strong>.
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: 100% aman, tidak ada data guru yang tertukar atau hilang.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout-box">
+        <h4><i class="fa-solid fa-lightbulb"></i> Keamanan Memori Alat Absen</h4>
+        <p>Mesin absen ini menggunakan modul memori terenkripsi. Meskipun listrik padam atau koneksi WiFi terputus sesaat, data sidik jari guru yang sudah terdaftar tetap aman tersimpan di dalam mesin tanpa perlu registrasi ulang.</p>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>Portal Presensi SMA Daruttaqwa &bull; Dokumentasi Fitur Klien</span>
+      <span>Halaman 1 dari 2</span>
+    </div>
+  </div>
+
+  <!-- ==================== HALAMAN 2: FITUR WEB DASHBOARD & PERBANDINGAN ==================== -->
+  <div class="page">
+    <div>
+      <div class="doc-header">
+        <div class="doc-brand">
+          <div class="brand-emblem">
+            <i class="fa-solid fa-desktop"></i>
+          </div>
+          <div class="brand-title">
+            <h1>DASHBOARD WEB PRESENSI</h1>
+            <p>Fitur Pemantauan Real-Time, Laporan Bulanan, & Pengelolaan Guru</p>
+          </div>
+        </div>
+        <div class="doc-meta">
+          <span class="badge-official"><i class="fa-solid fa-mobile-screen"></i> Tampilan Web & Mobile</span>
+          <div class="date-text">Edisi Pembaruan: September 2026</div>
+        </div>
+      </div>
+
+      <!-- Fitur Bagian 2: Web Dashboard -->
+      <div class="section-title">
+        <i class="fa-solid fa-browser"></i>
+        <span>Fitur-Fitur Baru pada Dashboard Web (Aplikasi Pantau)</span>
+      </div>
+
+      <div class="feature-grid">
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box">
+              <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Kalkulasi Otomatis Persentase & Keterlambatan</div>
+              <div class="feature-card-desc">
+                Jika di sistem lama data hanya berupa baris mentah di spreadsheet, dashboard web baru otomatis menghitung <strong>Persentase Kehadiran (%)</strong>, akumulasi menit terlambat, dan rasio tepat waktu seketika.
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: Evaluasi kedisiplinan guru tanpa perlu rumus manual di Excel.</span>
+          </div>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box accent-blue">
+              <i class="fa-solid fa-id-badge"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Bebas Custom Nama Guru, Gelar, & Jabatan</div>
+              <div class="feature-card-desc">
+                Admin dan guru dapat menyesuaikan nama lengkap, gelar akademik, NIP/ID, peran (Pengajar vs Tata Usaha), dan status penugasan (Tetap / Honorer) secara mandiri lewat dashboard web.
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: Data guru selalu rapi dan fleksibel disesuaikan kapan saja.</span>
+          </div>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box accent-purple">
+              <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Perhitungan Persentase yang Adil (Bebas Tugas)</div>
+              <div class="feature-card-desc">
+                Guru yang di hari tertentu tidak ada jadwal mengajar dihitung sebagai <strong>"Bebas Tugas"</strong> (bukan alpa). Persentase kehadiran guru tetap maupun honorer dihitung secara proporsional dan adil.
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: Sangat adil bagi guru honorer maupun guru tetap sekolah.</span>
+          </div>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-box accent-orange">
+              <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <div>
+              <div class="feature-card-title">Ekspor Laporan Excel 1-Klik & Tampilan Mobile</div>
+              <div class="feature-card-desc">
+                Unduh rekapitulasi kehadiran bulanan ke file Microsoft Excel resmi (.XLS) dalam 1 kali klik. Tampilan web di smartphone juga mulus dengan navigasi sentuh bawah (*Floating Dock*).
+              </div>
+            </div>
+          </div>
+          <div class="feature-pill-benefit">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Manfaat: Laporan siap cetak untuk yayasan, pantau nyaman lewat HP.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Perbandingan Mesin Jadul vs Sistem Baru IoT -->
+      <div class="section-title">
+        <i class="fa-solid fa-code-compare"></i>
+        <span>Perbandingan Nyata: Sistem Presensi Lama vs Sistem IoT Baru</span>
+      </div>
+
+      <div class="table-container">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th style="width: 22%;">Kriteria</th>
+              <th style="width: 39%;">Sistem Lama</th>
+              <th style="width: 39%;">Sistem Baru SMA Daruttaqwa (IoT)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Pendaftaran Guru</strong></td>
+              <td><span class="tag-old">Ribet</span> Wajib akses alamat IP alat (<code>192.168.x.x</code>) dan harus satu jaringan WiFi alat.</td>
+              <td><span class="tag-new">Sangat Mudah</span> Cukup buka Web Dashboard dari HP/Laptop di mana saja, alat otomatis sinkron.</td>
+            </tr>
+            <tr>
+              <td><strong>Keamanan ID</strong></td>
+              <td><span class="tag-old">Rawan Bentrok</span> ID kartu / sidik jari bisa bertabrakan atau saling menimpa data guru lain.</td>
+              <td><span class="tag-new">Bebas Bentrok</span> Sistem ID unik terproteksi otomatis; data presensi dijamin tidak akan tertukar.</td>
+            </tr>
+            <tr>
+              <td><strong>Profil & Nama Guru</strong></td>
+              <td><span class="tag-old">Kaku</span> Sulit custom nama guru, gelar, atau status penugasan pengajar.</td>
+              <td><span class="tag-new">Bebas Custom</span> Bisa atur nama lengkap guru, gelar, NIP, status guru tetap/honorer di web.</td>
+            </tr>
+            <tr>
+              <td><strong>Pengolahan Data</strong></td>
+              <td><span class="tag-old">Data Mentah</span> Hanya deretan log baris di sheet; tidak ada persentase hadir & keterlambatan.</td>
+              <td><span class="tag-new">Analitik Otomatis</span> Dashboard langsung hitung % kehadiran bulanan, menit terlambat & grafik.</td>
+            </tr>
+            <tr>
+              <td><strong>Rekap & Laporan</strong></td>
+              <td><span class="tag-old">Manual</span> Admin harus menghitung rumus spreadsheet sendiri untuk laporan rapat.</td>
+              <td><span class="tag-new">1-Klik Ekspor</span> Sekali klik langsung jadi file Excel (.XLS) rapi siap dicetak untuk yayasan.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Ringkasan Hak Akses Akun -->
+      <div class="callout-box" style="background: #f8fafc; border-color: #cbd5e1; border-left-color: #004532;">
+        <h4><i class="fa-solid fa-user-lock"></i> 3 Tingkatan Hak Akses untuk Menjaga Privasi:</h4>
+        <p style="color: #334155; margin-top: 2px;">
+          1. <strong>Guru Pengajar</strong>: Hanya dapat melihat jadwal mengajar kelasnya dan riwayat presensi miliknya sendiri.<br>
+          2. <strong>Kepala Sekolah</strong>: Memantau kehadiran seluruh guru, jadwal pelajaran, persentase sekolah, dan cetak laporan.<br>
+          3. <strong>Admin Sistem</strong>: Mengelola data guru, mendaftarkan sidik jari jarak jauh, dan memantau status mesin absen.
+        </p>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>Portal Presensi SMA Daruttaqwa &bull; Dokumentasi Fitur Klien</span>
+      <span>Halaman 2 dari 2</span>
+    </div>
+  </div>
+
+</body>
+</html>

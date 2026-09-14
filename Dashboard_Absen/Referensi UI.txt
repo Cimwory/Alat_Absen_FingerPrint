@@ -1,0 +1,1460 @@
+<!DOCTYPE html><html lang="id" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Sistem Absensi Guru IoT ESP32 - SMK Mandiri IoT</title>
+<!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Plus Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Config Verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#002113",
+            "surface-dim": "#d3daef",
+            "primary": "#004532",
+            "on-error-container": "#93000a",
+            "outline-variant": "#bec9c2",
+            "secondary-container": "#6cf8bb",
+            "surface-variant": "#dce2f7",
+            "tertiary-container": "#804300",
+            "secondary-fixed": "#6ffbbe",
+            "on-primary-container": "#8bd6b7",
+            "surface-bright": "#f9f9ff",
+            "on-primary-fixed-variant": "#00513b",
+            "tertiary-fixed-dim": "#ffb77d",
+            "on-primary-fixed": "#002116",
+            "inverse-on-surface": "#edf0ff",
+            "primary-container": "#065f46",
+            "outline": "#6f7973",
+            "on-tertiary-fixed-variant": "#6e3900",
+            "on-surface-variant": "#3f4944",
+            "surface-tint": "#1b6b51",
+            "primary-fixed-dim": "#8bd6b6",
+            "surface-container": "#e9edff",
+            "on-tertiary": "#ffffff",
+            "on-secondary": "#ffffff",
+            "tertiary-fixed": "#ffdcc3",
+            "on-secondary-container": "#00714d",
+            "background": "#f9f9ff",
+            "surface-container-low": "#f1f3ff",
+            "inverse-surface": "#293040",
+            "secondary-fixed-dim": "#4edea3",
+            "error-container": "#ffdad6",
+            "surface-container-high": "#e1e8fd",
+            "on-primary": "#ffffff",
+            "on-secondary-fixed-variant": "#005236",
+            "on-error": "#ffffff",
+            "surface-container-highest": "#dce2f7",
+            "on-surface": "#141b2b",
+            "secondary": "#006c49",
+            "primary-fixed": "#a6f2d1",
+            "on-tertiary-container": "#ffb87e",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#2f1500",
+            "surface": "#f9f9ff",
+            "on-background": "#141b2b",
+            "inverse-primary": "#8bd6b6",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#5e3000"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "1rem",
+            "space-xl": "2.5rem",
+            "gutter-mobile": "0.75rem",
+            "margin-mobile": "1rem",
+            "space-lg": "1.5rem",
+            "space-sm": "0.5rem",
+            "gutter": "1.25rem",
+            "space-xs": "0.25rem",
+            "margin": "2rem"
+          },
+          "fontFamily": {
+            "headline-sm": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "headline-xl": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "label-md": ["JetBrains Mono"],
+            "body-md": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "headline-xl-mobile": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "label-sm": ["11px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "headline-xl": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "label-md": ["13px", {"lineHeight": "18px", "fontWeight": "500"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+            "headline-xl-mobile": ["26px", {"lineHeight": "34px", "fontWeight": "700"}],
+            "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #bec9c2;
+      border-radius: 4px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-animation {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased flex min-h-screen">
+<!-- ==================== SIDEBAR COMPONENT (Shared Components JSON) ==================== -->
+<aside class="fixed top-0 left-0 h-screen w-64 flex flex-col justify-between z-40 bg-surface-container-lowest border-r border-outline-variant/30 shadow-sm">
+<div class="w-64 h-full p-4 flex flex-col justify-between overflow-y-auto custom-scroll">
+<!-- Brand & Status Header -->
+<div>
+<div class="flex items-center gap-3 px-2 py-3 border-b border-outline-variant/30 pb-4 mb-4">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[24px]">developer_board</span>
+</div>
+<div>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary">SMK Mandiri IoT</h1>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed-dim inline-block pulse-animation"></span>
+<span class="text-label-sm font-label-sm text-secondary font-semibold tracking-tight">Sistem Presensi Online</span>
+</div>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav class="space-y-1.5" id="sidebar-nav">
+<button class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-on-primary font-medium text-label-md transition-transform duration-100 ease-out active:scale-[0.98]" data-tab="ringkasan"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="">Ringkasan</span></button>
+<button class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-on-primary font-medium text-label-md transition-transform duration-100 ease-out active:scale-[0.98]" data-tab="jadwal">
+<span class="material-symbols-outlined text-[20px]">calendar_month</span>
+<span class="">Jadwal Mengajar</span>
+</button>
+<button class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors text-label-md duration-150 active:scale-[0.98]" data-tab="guru">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+<span class="">Daftar Guru</span>
+</button>
+<button class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors text-label-md duration-150 active:scale-[0.98]" data-tab="log">
+<span class="material-symbols-outlined text-[20px]">history_toggle_off</span>
+<span class="">Log &amp; Rekap Absensi</span>
+</button>
+<button class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors text-label-md duration-150 active:scale-[0.98]" data-tab="status-esp32"><span class="material-symbols-outlined text-[20px]">router</span><span class="">Status Mesin Presensi</span></button>
+</nav>
+</div>
+<!-- Bottom Hardware Gateway Widget & CTA -->
+<div class="space-y-3 pt-4 border-t border-outline-variant/30">
+<!-- Live Node Telemetry Card -->
+<div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/40"><div class="flex items-center justify-between mb-2"><span class="text-label-sm font-label-sm font-bold text-on-surface uppercase tracking-wider">Mesin Presensi</span><span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold font-label-sm flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> 3 Mesin Siap</span></div><div class="space-y-1.5"><div class="flex items-center justify-between text-body-sm font-body-sm"><span class="text-on-surface-variant">Pintu Gerbang</span><span class="text-label-sm font-label-sm text-secondary font-semibold">Aktif</span></div><div class="flex items-center justify-between text-body-sm font-body-sm"><span class="text-on-surface-variant">Ruang Guru</span><span class="text-label-sm font-label-sm text-secondary font-semibold">Aktif</span></div><div class="flex items-center justify-between text-body-sm font-body-sm"><span class="text-on-surface-variant">Lab Komputer</span><span class="text-label-sm font-label-sm text-secondary font-semibold">Aktif</span></div></div><div class="mt-2 pt-2 border-t border-outline-variant/30 flex items-center justify-between text-[11px] text-outline font-label-sm"><span class="">Koneksi: Sangat Baik</span><span class="">Sistem: Normal</span></div></div>
+<!-- Enroll Action Button (Shared JSON CTA) -->
+<button class="w-full py-2.5 px-3 bg-primary hover:bg-primary-container text-on-primary rounded-lg text-label-md font-label-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all duration-150 active:scale-[0.97]" id="open-enroll-modal-btn"><span class="material-symbols-outlined text-[18px]">person_add</span><span class="">Daftarkan Jari Guru</span></button>
+<!-- Footer Help & Settings -->
+<div class="grid grid-cols-2 gap-1 pt-1 text-center">
+<button class="py-1.5 px-2 rounded-lg text-on-surface-variant hover:bg-surface-container flex items-center justify-center gap-1 text-[11px] font-label-sm"><span class="material-symbols-outlined text-[16px]">tune</span><span class="">Pengaturan Sistem</span></button>
+<button class="py-1.5 px-2 rounded-lg text-on-surface-variant hover:bg-surface-container flex items-center justify-center gap-1 text-[11px] font-label-sm">
+<span class="material-symbols-outlined text-[16px]">contact_support</span>
+<span class="">Bantuan</span>
+</button>
+</div>
+</div>
+</div>
+</aside>
+<!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+<div class="ml-64 flex-1 flex flex-col min-w-0">
+<!-- ==================== TOP NAVIGATION BAR (Shared Components JSON) ==================== -->
+<header class="sticky top-0 z-30 bg-surface-container-lowest/95 backdrop-blur-md border-b border-outline-variant/30 shadow-sm">
+<div class="flex justify-between items-center px-6 py-3 w-full">
+<!-- Left Title & Academic Context -->
+<div class="flex items-center gap-4">
+<div>
+<div class="flex items-center gap-2 text-body-sm font-body-sm text-on-surface-variant">
+<span class="">Portal Akademik</span>
+<span class="">/</span>
+<span class="font-semibold text-primary" id="active-breadcrumb">Ringkasan</span>
+</div>
+<h2 class="text-headline-md font-headline-md font-bold text-on-surface" id="page-heading">Ringkasan Dashboard</h2>
+</div>
+<div class="hidden lg:flex items-center gap-2 px-3 py-1 bg-surface-container-low rounded-lg border border-outline-variant/40">
+<span class="material-symbols-outlined text-primary text-[18px]">school</span>
+<span class="text-label-sm font-label-sm font-semibold text-primary">Semester Ganjil 2024/2025</span>
+</div>
+</div>
+<!-- Center/Right Controls: Realtime Clock, Sync Info, Actions & Avatar -->
+<div class="flex items-center gap-3">
+<!-- Live Real-Time Digital Clock -->
+<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-surface-container rounded-lg border border-outline-variant/40">
+<span class="material-symbols-outlined text-secondary text-[18px]">schedule</span>
+<span class="text-label-md font-label-md font-bold text-on-surface" id="live-clock">08:58:45 WIB</span>
+</div>
+<!-- Sync Status Indicator -->
+<div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant text-label-sm font-label-sm border border-outline-variant/30">
+<span class="material-symbols-outlined text-secondary text-[16px]">cloud_done</span>
+<span id="sync-text" class="">Tersinkron: 2 mnt lalu</span>
+</div>
+<!-- Sync Button -->
+<button class="flex items-center gap-1.5 px-3 py-2 bg-surface-container hover:bg-surface-container-high text-primary rounded-lg text-label-md font-label-md font-semibold transition-all active:scale-[0.97] border border-outline-variant/50" id="btn-sync-now">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+<span class="hidden xl:inline">Sinkronkan Sekarang</span>
+</button>
+<!-- Notification Action -->
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors relative">
+<span class="material-symbols-outlined text-[22px]">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<!-- Administrator Profile Avatar -->
+<div class="header-auth-container pl-2 border-l border-outline-variant/40">
+  <div class="user-profile-capsule">
+    <img class="user-capsule-avatar" data-alt="Foto profil administrator sistem Drs. M. Arifin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_fRZJy7A_PliLEL42N_C6LrXf4p4kcv_oMx_B3WfJe63SjjuTJ9IcENFU3vUk7uuUnvk5q1iwdndFhDBvCNzB-Vd9HxH8wxd2bBt0_p1EH0TlW6YWwAl-lxmEtyVLWN5j0MdSh9CqkuIfv6HOaY0drsZgP53g1h-AL4i0KlyaCRv4WGkMOdOkh5FPmQWEm0WMk1P3LWRp7Xl--iNQrTe3otPJkiz8NuqmnCphkN0P20Cl0Ybg8IedOQ">
+    <div class="user-capsule-meta hidden sm:flex">
+      <span class="user-capsule-name">Drs. M. Arifin</span>
+      <span class="badge-role badge-role-admin">
+        <span class="material-symbols-outlined text-[12px]">shield_person</span> Admin Sistem
+      </span>
+    </div>
+    <button class="btn-capsule-logout" title="Keluar / Logout" onclick="alertToast('Sesi autentikasi telah diakhiri. Silakan login kembali.')">
+      <span class="material-symbols-outlined text-[16px]">logout</span>
+    </button>
+  </div>
+</div>
+</div>
+</div>
+</header>
+<!-- ==================== MAIN CANVAS ==================== -->
+<main class="flex-1 p-6 space-y-6 max-w-[1600px] w-full mx-auto">
+<!-- Google Sheets Cloud Sync Banner -->
+<div class="user-portal-banner shadow-sm">
+  <div class="portal-banner-content">
+    <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 border border-primary/20">
+      <span class="material-symbols-outlined text-[24px]">admin_panel_settings</span>
+    </div>
+    <div>
+      <div class="flex items-center gap-2">
+        <h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Sesi Aktif: Hak Akses Administrator Sistem</h4>
+        <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold font-label-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Terotentikasi
+        </span>
+      </div>
+      <p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Anda memiliki wewenang penuh untuk verifikasi absensi guru, pendaftaran ID sidik jari, dan ekspor rekap.</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-1.5 flex-wrap flex-shrink-0">
+    <span class="text-[11px] font-label-sm text-outline mr-1 font-medium">Pratinjau Role:</span>
+    <span class="badge-role badge-role-admin cursor-pointer shadow-sm" title="Role aktif saat ini"><span class="material-symbols-outlined text-[11px]">check</span> Admin</span>
+    <span class="badge-role badge-role-guru cursor-pointer hover:bg-primary/20" onclick="alertToast('Beralih ke mode pratinjau Guru')">Guru</span>
+    <span class="badge-role badge-role-kepsek cursor-pointer hover:bg-amber-100" onclick="alertToast('Beralih ke mode pratinjau Kepala Sekolah')">Kepala Sekolah</span>
+  </div>
+</div><div class="bg-gradient-to-r from-primary via-primary-container to-primary rounded-2xl p-4 text-on-primary flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm border border-secondary/30">
+<div class="flex items-center gap-3.5">
+<div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-[30px] text-[#0F9D58]" style="font-variation-settings: 'FILL' 1;">table_chart</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-label-sm font-label-sm font-bold">Terhubung Cloud</span>
+<span class="text-body-sm font-body-sm opacity-90">Pencatatan Otomatis Aktif ke Google Sheets Guru 2024/2025</span>
+</div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-white mt-0.5">Sinkronisasi Realtime Aktif ke Spreadsheet Guru 2024/2025</h3>
+</div>
+</div>
+<div class="flex items-center gap-2.5 w-full md:w-auto justify-end">
+<button class="flex-1 md:flex-none px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-label-md font-label-md font-semibold border border-white/20 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97]" id="btn-force-sync"><span class="material-symbols-outlined text-[18px]">refresh</span><span class="">Perbarui Data</span></button>
+<a class="flex-1 md:flex-none px-4 py-2 bg-secondary-container hover:bg-secondary-fixed text-on-secondary-container rounded-lg text-label-md font-label-md font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-[0.97]" href="https://docs.google.com/spreadsheets" target="_blank">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+<span class="">Buka Spreadsheet</span>
+</a>
+</div>
+</div>
+<!-- KPI Metrics Stats Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-stretch">
+  <!-- Metric 1: Guru Hadir Hari Ini -->
+  <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
+    <div>
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <span class="text-body-sm font-body-sm font-semibold text-on-surface-variant">Guru Hadir Hari Ini</span>
+        <div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary flex-shrink-0">
+          <span class="material-symbols-outlined text-[20px]">groups</span>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2 mt-1">
+        <span class="text-headline-xl font-headline-xl font-bold text-on-surface tracking-tight">42</span>
+        <span class="text-headline-sm font-headline-sm text-outline font-medium">/ 48</span>
+      </div>
+    </div>
+    <div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center gap-1.5 text-label-sm font-label-sm text-secondary font-semibold min-h-[38px]">
+      <span class="material-symbols-outlined text-[16px] flex-shrink-0">trending_up</span>
+      <span class="line-clamp-1">87.5% - Naik dibanding kemarin</span>
+    </div>
+  </div>
+
+  <!-- Metric 2: Tepat Waktu -->
+  <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
+    <div>
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <span class="text-body-sm font-body-sm font-semibold text-on-surface-variant">Tepat Waktu</span>
+        <div class="w-10 h-10 rounded-xl bg-[#D1FAE5] flex items-center justify-center text-[#065F46] flex-shrink-0">
+          <span class="material-symbols-outlined text-[20px]">task_alt</span>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2 mt-1">
+        <span class="text-headline-xl font-headline-xl font-bold text-primary tracking-tight">38</span>
+        <span class="text-body-sm font-body-sm text-outline font-medium">Guru</span>
+      </div>
+    </div>
+    <div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center text-label-sm font-label-sm text-outline min-h-[38px]">
+      <span class="line-clamp-1">Tap-in sebelum 07:15 WIB</span>
+    </div>
+  </div>
+
+  <!-- Metric 3: Terlambat -->
+  <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
+    <div>
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <span class="text-body-sm font-body-sm font-semibold text-on-surface-variant">Terlambat</span>
+        <div class="w-10 h-10 rounded-xl bg-[#FEF3C7] flex items-center justify-center text-[#92400E] flex-shrink-0">
+          <span class="material-symbols-outlined text-[20px]">pace</span>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2 mt-1">
+        <span class="text-headline-xl font-headline-xl font-bold text-[#92400E] tracking-tight">4</span>
+        <span class="text-body-sm font-body-sm text-outline font-medium">Guru</span>
+      </div>
+    </div>
+    <div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center text-label-sm font-label-sm text-[#92400E] min-h-[38px]">
+      <span class="line-clamp-1">Maks. toleransi dispensasi 15m</span>
+    </div>
+  </div>
+
+  <!-- Metric 4: Izin / Sakit / Alpa -->
+  <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
+    <div>
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <span class="text-body-sm font-body-sm font-semibold text-on-surface-variant">Izin / Sakit / Alpa</span>
+        <div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant flex-shrink-0">
+          <span class="material-symbols-outlined text-[20px]">event_busy</span>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2 mt-1">
+        <span class="text-headline-xl font-headline-xl font-bold text-on-surface tracking-tight">6</span>
+        <span class="text-body-sm font-body-sm text-outline font-medium">Guru</span>
+      </div>
+    </div>
+    <div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center text-label-sm font-label-sm text-outline min-h-[38px]">
+      <span class="line-clamp-1">4 Izin resmi, 2 Sakit</span>
+    </div>
+  </div>
+
+  <!-- Metric 5: Status Node ESP32 -->
+  <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full"><div class=""><div class="flex items-center justify-between gap-2 mb-3"><span class="text-body-sm font-body-sm font-semibold text-on-surface-variant">Mesin Presensi</span><div class="w-10 h-10 rounded-xl bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed flex-shrink-0"><span class="material-symbols-outlined text-[20px]">sensors</span></div></div><div class="flex items-baseline gap-2 mt-1"><span class="text-headline-xl font-headline-xl font-bold text-secondary tracking-tight">3/3</span><span class="text-body-sm font-body-sm text-secondary font-bold">Online</span></div></div><div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center text-label-sm font-label-sm text-outline min-h-[38px]"><span class="line-clamp-1">Gerbang, Ruang Guru, &amp; Lab Aktif</span></div></div>
+</div>
+<!-- ==================== TAB CONTENT 1: RINGKASAN (OVERVIEW) ==================== -->
+<div class="tab-pane space-y-6" id="tab-view-ringkasan">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Left Column: Real-time Attendance Activity Feed -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm">
+<div class="flex items-center justify-between pb-4 border-b border-outline-variant/20 mb-4">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-on-surface">Live Feed Tap-In Kartu / Biometrik</h3>
+<p class="text-body-sm font-body-sm text-outline">Data kehadiran masuk otomatis secara realtime</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary pulse-animation"></span>
+<span class="text-label-sm font-label-sm text-secondary font-semibold">Pencatatan Aktif</span>
+</div>
+</div>
+<!-- Feed List -->
+<div class="space-y-3"><div class="p-3.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex items-center justify-between gap-4 hover:border-secondary transition-all"><div class="flex items-center gap-3.5"><img class="w-11 h-11 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of Bambang Haryono smiling calmly with clear focus wearing batik uniform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByjq-I5ydc1JWuWs8S1NfwqIO6RxKb_cRYw-Dl_uwlX-tc6Na01tJpWlEy63CW3akK4vqEvFBXtkjSyAx3v8aLU6H0bFhv6ZrTG3U7rbMuxzzsN2xQ6YWJrVDzq2uWiv8n-zfRa7eE9HPA6jLgpBqm2D4A4sl4ktZKr_DSgYYv3tzCwBbhXHic_PhD60DCefvIZeQg5Jg8XoBBtFfNDLt2_TlCrpR4Jhf3EC7mPLMJ21J95Rf0tzi8Fw"><div><div class="flex items-center gap-2"><span class="text-body-md font-body-md font-bold text-on-surface">Bambang Haryono, S.Kom</span><span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[11px] font-label-sm">NIP. 198204122005011004</span></div><div class="flex items-center gap-2 mt-1 text-body-sm font-body-sm text-outline"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">contactless</span> Kartu RFID (ID: 7A:C3:99:B2)</span><span class="">•</span><span class="flex items-center gap-1 font-label-sm"><span class="material-symbols-outlined text-[14px]">location_on</span> Gerbang Utama</span></div></div></div><div class="text-right"><span class="px-2.5 py-1 rounded-full bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0] text-label-sm font-label-sm font-bold inline-block mb-1">Tepat Waktu</span><p class="text-label-md font-label-md font-bold text-on-surface">06:58:24 WIB</p></div></div><div class="p-3.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex items-center justify-between gap-4 hover:border-secondary transition-all"><div class="flex items-center gap-3.5"><img class="w-11 h-11 rounded-full object-cover border border-outline-variant" data-alt="Close up professional portrait of female mathematics teacher Siti Rahmawati wearing emerald green hijab." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoBJqgexhCvlgamIzSUeuuzLDty7g0IThUC31AgdpXk-hFZ02-ZMhmTpmpy4ZXZ_jcfqbD0utD4O5OplLJVlYMbBtfzxTNN02x0XTkfotJm_ahadulVErOqNvS7kvMTKxBqLftifGeFLkXdAV2a-mDCXsnj0QfwD_bsyOJX8KKKEJyFnrSt5jgq43BPdtbwMN5rSwQ3Zn29N7FtphdmFISgyCFa-lh8tLV_zq6mlSHaeSnEQL9hi7KEg"><div><div class="flex items-center gap-2"><span class="text-body-md font-body-md font-bold text-on-surface">Siti Rahmawati, M.Pd</span><span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[11px] font-label-sm">NIP. 198709152010012008</span></div><div class="flex items-center gap-2 mt-1 text-body-sm font-body-sm text-outline"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">fingerprint</span> ID Jari: #14 (Sidik Jari)</span><span class="">•</span><span class="flex items-center gap-1 font-label-sm"><span class="material-symbols-outlined text-[14px]">location_on</span> Ruang Guru</span></div></div></div><div class="text-right"><span class="px-2.5 py-1 rounded-full bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0] text-label-sm font-label-sm font-bold inline-block mb-1">Tepat Waktu</span><p class="text-label-md font-label-md font-bold text-on-surface">07:04:11 WIB</p></div></div><div class="p-3.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex items-center justify-between gap-4 hover:border-secondary transition-all"><div class="flex items-center gap-3.5"><img class="w-11 h-11 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of Indonesian senior educator Drs. Ahmad Fauzi." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIrVBep0ua538XOX7_87OFayXkOUe89sJ-NHfFAaOYPPVmY6LIZO2Dy8KnJYNmWytXZO64_jLXpD2upLb8XNKKj7F0jx0rsKa41ltmQT0wt0FXW6tlP4Q907o7oE8-BfWpEFChoofvDou55IFjesXMJKT_nZ_SORPmalqqw6tfJ0pfAkhCSMHN39OgQQMnb7UujyPTlDPIXV5UjzuP4VOg3yLYtr9HnsV2Ps4mDSToyb7fQQcdqyOILw"><div><div class="flex items-center gap-2"><span class="text-body-md font-body-md font-bold text-on-surface">Drs. Ahmad Fauzi</span><span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[11px] font-label-sm">NIP. 196901021994031005</span></div><div class="flex items-center gap-2 mt-1 text-body-sm font-body-sm text-outline"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">contactless</span> Kartu RFID (ID: 12:88:E0:4F)</span><span class="">•</span><span class="flex items-center gap-1 font-label-sm"><span class="material-symbols-outlined text-[14px]">location_on</span> Gerbang Utama</span></div></div></div><div class="text-right"><span class="px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-label-sm font-label-sm font-bold inline-block mb-1">Terlambat (+12m)</span><p class="text-label-md font-label-md font-bold text-[#92400E]">07:27:05 WIB</p></div></div><div class="p-3.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex items-center justify-between gap-4 hover:border-secondary transition-all"><div class="flex items-center gap-3.5"><img class="w-11 h-11 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of young vocational educator Dewi Lestari smiling warmly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnm1jsBRdHJMo1WThd5uCnlNzecDKNAeP9KMzx4lV0UEOgah9wYPRxVgwhb8EFSwiBpG_Z_pbl6xsUoWAuA4uETH4GwDmBAf0sgRUl7j-aXgvf35MTvkiKR44D7AUn35tQm0VIKmCXWNzA8Cr4xr7a2ScyvjWuIq3kT0XsRhs2468x45NmYlJu6VAJsH1CKojB8wyCQMQXBw_IaQoPMPa6tnXGCCq2G5uhfKpsIrOTrrLGMkf1LZSjvA"><div><div class="flex items-center gap-2"><span class="text-body-md font-body-md font-bold text-on-surface">Dewi Lestari, S.T</span><span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[11px] font-label-sm">NIP. 199307222019032014</span></div><div class="flex items-center gap-2 mt-1 text-body-sm font-body-sm text-outline"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">fingerprint</span> Kartu RFID / ID Jari: #07</span><span class="">•</span><span class="flex items-center gap-1 font-label-sm"><span class="material-symbols-outlined text-[14px]">location_on</span> Lab Komputer</span></div></div></div><div class="text-right"><span class="px-2.5 py-1 rounded-full bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0] text-label-sm font-label-sm font-bold inline-block mb-1">Tepat Waktu</span><p class="text-label-md font-label-md font-bold text-on-surface">07:09:44 WIB</p></div></div></div>
+<!-- View More Logs Link -->
+<div class="mt-4 pt-3 text-center border-t border-outline-variant/20">
+<button class="text-label-md font-label-md text-primary font-bold hover:underline inline-flex items-center gap-1" onclick="document.querySelector('[data-tab=\'log\']').click()">
+<span class="">Lihat Seluruh Riwayat Absensi Hari Ini</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Right Column: Weekly Analytics & Quick Actions -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Weekly Attendance Chart Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm">
+<h3 class="text-headline-sm font-headline-sm font-bold text-on-surface mb-1">Tren Kehadiran Mingguan</h3>
+<p class="text-body-sm font-body-sm text-outline mb-4">Rata-rata kehadiran guru minggu ke-3 Semester Ganjil</p>
+<!-- Mock Histogram / Bars -->
+<div class="space-y-3">
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="font-medium text-on-surface">Senin (Upacara)</span>
+<span class="font-label-sm font-bold text-primary">96% (46 Guru)</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 96%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="font-medium text-on-surface">Selasa</span>
+<span class="font-label-sm font-bold text-primary">92% (44 Guru)</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 92%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="font-medium text-on-surface">Rabu</span>
+<span class="font-label-sm font-bold text-primary">94% (45 Guru)</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 94%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="font-medium text-on-surface">Kamis (Hari Ini)</span>
+<span class="font-label-sm font-bold text-primary">87.5% (42 Guru)</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 87.5%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="font-medium text-outline">Jumat (Proyeksi)</span>
+<span class="font-label-sm text-outline">Est. 91%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-outline-variant h-full rounded-full" style="width: 91%"></div>
+</div>
+</div>
+</div>
+<div class="mt-4 p-3 bg-surface-container-low rounded-lg text-body-sm font-body-sm text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">insights</span>
+<span class="">Tingkat ketepatan waktu rata-rata: <strong class="text-primary">93.4%</strong></span>
+</div>
+</div>
+<!-- Quick Action Box -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm space-y-3">
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Aksi Cepat Absensi</h4>
+<div class="space-y-2">
+<button class="w-full py-2.5 px-4 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg text-label-md font-label-md font-semibold flex items-center justify-between border border-outline-variant/30 transition-all" onclick="openExportModal()">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">print</span>
+<span class="">Cetak Rekap Harian</span>
+</span>
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="w-full py-2.5 px-4 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg text-label-md font-label-md font-semibold flex items-center justify-between border border-outline-variant/30 transition-all" onclick="alertToast('Notifikasi WhatsApp berhasil dikirim ke 4 guru terlambat!')">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-[#25D366]">chat</span>
+<span class="">Notifikasi WA Terlambat</span>
+</span>
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="w-full py-2.5 px-4 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg text-label-md font-label-md font-semibold flex items-center justify-between border border-outline-variant/30 transition-all" onclick="alertToast('Menyinkronkan data presensi dengan Google Classroom...')">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">sync_alt</span>
+<span class="">Sinkron Jadwal Mengajar</span>
+</span>
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ==================== TAB CONTENT 2: JADWAL MENGAJAR ==================== -->
+<div class="tab-pane space-y-6" id="tab-view-jadwal">
+<!-- Filter Bar with Day Pills -->
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+<div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto" id="day-pills">
+<button class="day-btn px-3.5 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-label-md font-semibold transition-all">Semua</button>
+<button class="day-btn px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md font-semibold transition-all">Senin</button>
+<button class="day-btn px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md font-semibold transition-all">Selasa</button>
+<button class="day-btn px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md font-semibold transition-all">Rabu</button>
+<button class="day-btn px-3.5 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-label-md font-label-md font-semibold transition-all">Kamis (Hari Ini)</button>
+<button class="day-btn px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md font-semibold transition-all">Jumat</button>
+<button class="day-btn px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md font-semibold transition-all">Sabtu</button>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<select class="px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-body-sm text-on-surface focus:border-primary">
+<option value="">Semua Jurusan / Kelas</option>
+<option value="RPL">Rekayasa Perangkat Lunak (RPL)</option>
+<option value="TKJ">Teknik Komputer &amp; Jaringan (TKJ)</option>
+<option value="DKV">Desain Komunikasi Visual (DKV)</option>
+</select>
+<button class="px-3 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg text-label-md font-label-md font-semibold flex items-center gap-1.5 whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span class="">Tambah Jadwal</span>
+</button>
+</div>
+</div>
+<!-- Schedule Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:border-primary transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="px-2.5 py-1 rounded-md bg-[#D1FAE5] text-[#065F46] font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">alarm</span> 07:30 - 09:45 WIB
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-label-sm font-bold">X RPL 1</span>
+</div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Pemrograman Dasar &amp; IoT Embedded</h4>
+<p class="text-body-sm font-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">meeting_room</span>
+<span class="">Lab IoT &amp; Mikrokontroler (Gedung B Lt. 2)</span>
+</p>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant" data-alt="Portrait of an Indonesian male computer science instructor smiling with glasses in a school classroom with soft green lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ3ysrjDqRjv5hUVBx3OIugI-yNW4f5MjiAnU72WIdcv-V-FDb8cKbwI66Bd1bbO6v7BwAwa6B_2gOwWIZNFMOARcIHsAkX9E0Hyw4QFOBP5y8f-tYosfqubwQCAUDHwqlkM4Vk1TqPX6bmJHJFHxsnNxyrDaQcl08iugZ2c7y5oLJclUBzCk_co7ZqA6HjODtH4a-d0jKsTGZI7xzN2fuAIN4Ab1vdULdek7qw3XB5wAoTAJOfeY_5w">
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Bambang Haryono, S.Kom</p>
+<p class="text-[11px] font-label-sm text-secondary font-semibold">Status: Sudah Hadir di Lab</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-[24px]">verified</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:border-primary transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="px-2.5 py-1 rounded-md bg-[#D1FAE5] text-[#065F46] font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">alarm</span> 08:15 - 10:30 WIB
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-label-sm font-bold">XI TKJ 2</span>
+</div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Administrasi Infrastruktur Jaringan</h4>
+<p class="text-body-sm font-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">meeting_room</span>
+<span class="">Lab Jaringan Komputer (Gedung C Lt. 1)</span>
+</p>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of a young Indonesian female IT teacher smiling warmly with modern educational lab equipment in the blurred background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBo9S7dBaZcRKAK_vrzfKYI-KonqdQYAJX3ZmSXuarjbdVbPaf03BpjUC5wQBP5VzScmZ0GRL5ijN9ODyQPpM3McdGK0yMhwunG5WmQ7DGfMJJAsx0rk3bWC1nC3wVXxGtVprBGeQK1z3XB4t294nc36ZnyNSMih7Kzc9o311Ot4eWOqKTbhjLF9YwyvaPRgm6X24b_MbQJMzzrexKrIyi3HEFfvQpPsGdmb32nWnv4jCg8QX27hiDFyw">
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Dewi Lestari, S.T</p>
+<p class="text-[11px] font-label-sm text-secondary font-semibold">Status: Sudah Hadir di Sekolah</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-[24px]">verified</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:border-primary transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="px-2.5 py-1 rounded-md bg-[#FEF3C7] text-[#92400E] font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">alarm</span> 10:00 - 11:30 WIB
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-label-sm font-bold">XII RPL 2</span>
+</div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Matematika Terapan &amp; Statistika</h4>
+<p class="text-body-sm font-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">meeting_room</span>
+<span class="">R. Teori 04 (Gedung Utama Lt. 2)</span>
+</p>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant" data-alt="Portrait of an Indonesian female educator in an elegant emerald hijab smiling warmly in front of a white whiteboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG-S8F2uXVqzRpj3DdciZmAkvLRM6NK4myuOVYr66qWOwUU7pYGd7HqtMOq06QjYofhM_nyq1sb7KexnemEv2BrND2quw24nuvsFuCMEVSCab9euttP3OQBO5dCDBQcjVTf5EE46W6m8eP0DViXW8VdqBSKr_oPC2L1nY6S99z1wsQ8287IzUNVDyvA0ss_nOvBCP5xG6qCF__K7phWsTFB2CCsyGu1xXuqW4YuD6gMmTxprS_P2e4og">
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Siti Rahmawati, M.Pd</p>
+<p class="text-[11px] font-label-sm text-secondary font-semibold">Status: Menunggu Jam Mulai</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[24px]">pending</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:border-primary transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="px-2.5 py-1 rounded-md bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">alarm</span> 12:45 - 14:15 WIB
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-label-sm font-bold">X DKV 1</span>
+</div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Fisika Terapan &amp; Rangkaian Listrik</h4>
+<p class="text-body-sm font-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">meeting_room</span>
+<span class="">R. Sains &amp; Fisika (Gedung B Lt. 1)</span>
+</p>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant" data-alt="Senior Indonesian physics lecturer in glasses wearing formal teaching outfit smiling in academic classroom setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASfyhNvpLgilJ_tnMYavN_P8J2dDTSrM9HjxX224FZ7tzgtJ9j1Cc15jkfepcP2Czg9eNVFc8Ywy_y0o4Nubl4ZC0RfTWmaIEvHyYX8EKZu9C-mLXJX_dK7FWesXYkK6hCBtttP2aTNORwI0G4ykqQzpbVT7Qj7sqq9d65PeoJkn0rl74mluDsgrBDWccpiZyQCge6IX6l7BW1iIVR1AjXBD6q6k9oLXDVA8SOB8XiYT9K4SUc3JDzIQ">
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Drs. Ahmad Fauzi</p>
+<p class="text-[11px] font-label-sm text-outline">Status: Terlambat Hadir (Pagi)</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-[#92400E] text-[24px]">schedule</span>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:border-primary transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="px-2.5 py-1 rounded-md bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">alarm</span> 13:00 - 15:15 WIB
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-label-sm font-bold">XII TKJ 1</span>
+</div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Keamanan Jaringan &amp; Ethical Hacking</h4>
+<p class="text-body-sm font-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">meeting_room</span>
+<span class="">Lab Komputer Server 01</span>
+</p>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant" data-alt="Portrait of an energetic Indonesian male educator in vocational school electronics workshop with clean lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG05GRxyJpabtN2cVpQtkjaW9NKPPLS1LBhTdK16ncNX4Idj4sko8nOvdHtCleVHdXBE-TaNX7YypQUniMDbmooBDYZl-RqzC4pxzExl8B_xzVMQQ780EjyFa6Tf_D5aou31NHiU7Om6TREHt34D3Wz6hMh70lZuM-hDzMJJCmLsnLVmM2N1be2XoycSewgRdAFxm-NCeGNZZ47SENzg7kQUu0pQ_FaYutvJNDfimk2w6R_djt8Svl8Q">
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Rizky Kurniawan, S.Pd</p>
+<p class="text-[11px] font-label-sm text-secondary font-semibold">Status: Sudah Hadir di Sekolah</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-[24px]">verified</span>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:border-primary transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="px-2.5 py-1 rounded-md bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">alarm</span> 14:15 - 15:45 WIB
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-label-sm font-bold">X TKJ 3</span>
+</div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Bahasa Inggris Teknik &amp; Komunikasi</h4>
+<p class="text-body-sm font-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">meeting_room</span>
+<span class="">R. Bahasa 02 (Gedung A Lt. 3)</span>
+</p>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant" data-alt="Close up of an Indonesian female English language teacher smiling warmly wearing formal modest wear in classroom." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdFBfVD_XYFSXmGg2ilEYRamDOLJ8eM4O_Bsk9u5RE8aVKH5MXQUwKfskACGLq01sCA9RHwbpkYJjKygQUTfu7NX8Ry4hwaQxI144DAu6yX_gmBi0QBGnaoZJxSLiFgcq6aHb6JilkDnKr4jOt7PIbS8a-jz0UaBYQPbLMGt1L8h4PJdDjQ-5stEUFWXWn4FGhYIsrf7smEUE2M0KnOiIHTFvXXFk7C5It22VekcRAJ8h---4OWyyCZg">
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Nurul Hidayah, S.Pd</p>
+<p class="text-[11px] font-label-sm text-outline">Status: Izin Sakit (Dispensasi)</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[24px]">cancel</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ==================== TAB CONTENT 3: DAFTAR GURU ==================== -->
+<div class="tab-pane space-y-6 hidden" id="tab-view-guru">
+<!-- Filter and Search Toolbar -->
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4">
+<div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+<!-- Search bar -->
+<div class="relative w-full sm:w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+<input class="w-full pl-10 pr-3 py-2 bg-surface-container-low border border-outline-variant/40 rounded-lg text-body-sm font-body-sm focus:border-primary focus:bg-white transition-all" id="teacher-search" placeholder="Cari nama guru / NIP..." type="text">
+</div>
+<!-- Filters -->
+<select class="w-full sm:w-auto px-3 py-2 bg-surface-container-low border border-outline-variant/40 rounded-lg text-body-sm font-body-sm text-on-surface">
+<option value="">Status Kepegawaian (Semua)</option>
+<option value="PNS">PNS / ASN</option>
+<option value="P3K">PPPK</option>
+<option value="GTT">Guru Tetap Yayasan (GTY)</option>
+</select>
+<select class="w-full sm:w-auto px-3 py-2 bg-surface-container-low border border-outline-variant/40 rounded-lg text-body-sm font-body-sm text-on-surface">
+<option value="">Status Kehadiran (Semua)</option>
+<option value="hadir">Hadir Hari Ini</option>
+<option value="terlambat">Terlambat</option>
+<option value="izin">Izin / Sakit</option>
+</select>
+</div>
+<button class="w-full lg:w-auto px-4 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg text-label-md font-label-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.97]" onclick="alertToast('Formulir Pendaftaran Guru Baru Terbuka')">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+<span class="">Tambah Guru Baru</span>
+</button>
+</div>
+<!-- Teacher Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" id="teacher-list-grid">
+<!-- Teacher Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<img class="w-12 h-12 rounded-xl object-cover border border-outline-variant" data-alt="Portrait of Bambang Haryono Indonesian vocational computer instructor smiling in clean professional attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEcfrni6GhoPQ2gidIuEsvZcw8smZkUBGOqebm5XtD7eHJLa99e8zC4vrMZ3dfH7pjE-v4bsMqoqHJsZHyrWx3wVchSIXel_2KJOl0KpnCQXYRH7pUYGM5iLkOEEWAkdysfRBJXqV28ERxPnEI3IChRhM-PGqscM1uzFxpkAYVdwa6AXae-fh5_8gVnINkz9pG3514nthr2knCO4SjIBNJH6OB2WndPwu6XKZJcKuyc6uKfo2x7a6XJw">
+<div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Bambang Haryono, S.Kom</h4>
+<p class="text-label-sm font-label-sm text-outline">NIP. 198204122005011004</p>
+<span class="inline-block mt-0.5 px-2 py-0.5 rounded bg-surface-container text-primary text-[10px] font-label-sm font-bold">Kaprog Keahlian RPL</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] text-[10px] font-label-sm font-bold">PNS</span>
+</div>
+<!-- Active Teaching Days -->
+<div class="mt-4">
+<p class="text-[11px] font-label-sm text-outline mb-1.5 uppercase font-bold">Hari Mengajar Aktif</p>
+<div class="flex items-center gap-1 text-[11px] font-label-sm font-bold">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Sen</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Sel</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-outline">Rab</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Kam</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Jum</span>
+</div>
+</div>
+<!-- Monthly Attendance Percentage Progress Bar -->
+<div class="mt-4">
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface-variant font-medium">Persentase Kehadiran Bulan Ini</span>
+<span class="font-label-sm font-bold text-primary">98.2%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 98.2%"></div>
+</div>
+</div>
+<!-- Mini Stats -->
+<div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-outline-variant/20 text-center">
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-primary">22</p>
+<p class="text-[10px] font-label-sm text-outline">Hadir</p>
+</div>
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-[#92400E]">1</p>
+<p class="text-[10px] font-label-sm text-outline">Terlambat</p>
+</div>
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-on-surface">0</p>
+<p class="text-[10px] font-label-sm text-outline">Sakit/Izin</p>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between gap-2">
+<button class="flex-1 py-1.5 px-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-label-sm font-label-sm font-bold transition-all" onclick="alertToast('Menampilkan detail profil guru...')">Detail</button>
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-all" onclick="alertToast('Membuka modal edit data guru...')">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg bg-error-container/50 hover:bg-error-container text-on-error-container transition-all" onclick="alertToast('Konfirmasi hapus data guru')">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Teacher Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<img class="w-12 h-12 rounded-xl object-cover border border-outline-variant" data-alt="Portrait of Siti Rahmawati female Indonesian mathematics teacher wearing jade hijab and pleasant smile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvDHRdnQYGfe4o-2THaBzQWI3pqRkFOQQ5_UgFc6M5R6eyQEivBn-A2X4TgKVNZ-vp6jHZTzNqKYT3Jq2ZPCptVRbmIQAtrNW3vj5xmzN9n6e02z2p79zOQGWJPgVqWXedOxXnkoXQntWhZxHNM0hwue2DzHjbv5f_owV4jdNiXD0F2SzsBvMZy5oWJqnYcoC6R4GJfHBcJzhyvTpjpTRYHUgSYHrF_w5xXy1ZzlnnzQkRRN39Fa79CA">
+<div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Siti Rahmawati, M.Pd</h4>
+<p class="text-label-sm font-label-sm text-outline">NIP. 198709152010012008</p>
+<span class="inline-block mt-0.5 px-2 py-0.5 rounded bg-surface-container text-primary text-[10px] font-label-sm font-bold">Guru Matematika Wajib</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] text-[10px] font-label-sm font-bold">PNS</span>
+</div>
+<!-- Active Teaching Days -->
+<div class="mt-4">
+<p class="text-[11px] font-label-sm text-outline mb-1.5 uppercase font-bold">Hari Mengajar Aktif</p>
+<div class="flex items-center gap-1 text-[11px] font-label-sm font-bold">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Sen</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-outline">Sel</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Rab</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Kam</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Jum</span>
+</div>
+</div>
+<!-- Monthly Attendance Percentage -->
+<div class="mt-4">
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface-variant font-medium">Persentase Kehadiran Bulan Ini</span>
+<span class="font-label-sm font-bold text-primary">95.5%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 95.5%"></div>
+</div>
+</div>
+<!-- Mini Stats -->
+<div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-outline-variant/20 text-center">
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-primary">21</p>
+<p class="text-[10px] font-label-sm text-outline">Hadir</p>
+</div>
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-[#92400E]">0</p>
+<p class="text-[10px] font-label-sm text-outline">Terlambat</p>
+</div>
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-on-surface">1</p>
+<p class="text-[10px] font-label-sm text-outline">Sakit/Izin</p>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between gap-2">
+<button class="flex-1 py-1.5 px-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-label-sm font-label-sm font-bold transition-all" onclick="alertToast('Menampilkan detail profil guru...')">Detail</button>
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-all" onclick="alertToast('Membuka modal edit data guru...')">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg bg-error-container/50 hover:bg-error-container text-on-error-container transition-all" onclick="alertToast('Konfirmasi hapus data guru')">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Teacher Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div>
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<img class="w-12 h-12 rounded-xl object-cover border border-outline-variant" data-alt="Portrait photo of Dewi Lestari female Indonesian IT teacher smiling pleasantly at workplace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwZ5wEOr3crTHP2eg22y5z7K2q9ZTQ_2bMPAnbRexXrYmbfmbH_MeHCwgRjsz_wYz_B3r4z5Aq2GTGX5_beZgtjxUifNAs3JJNIVEJ2R1famGVux7DG5jvHDY5qxfcyteRFlVFGxAGEVoNUljTCutC6jo2ZOMR0-HLF67RAKl1dU4_HVAMs-T0QtziuPdpS9YiRVSF3u348_6ip4kW5rN4Npx3jD0DXVlOj1QtaGQEmQL9-0HeJAL8TQ">
+<div>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">Dewi Lestari, S.T</h4>
+<p class="text-label-sm font-label-sm text-outline">NIP. 199307222019032014</p>
+<span class="inline-block mt-0.5 px-2 py-0.5 rounded bg-surface-container text-primary text-[10px] font-label-sm font-bold">Guru Produktif TKJ</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-label-sm font-bold">PPPK</span>
+</div>
+<!-- Active Teaching Days -->
+<div class="mt-4">
+<p class="text-[11px] font-label-sm text-outline mb-1.5 uppercase font-bold">Hari Mengajar Aktif</p>
+<div class="flex items-center gap-1 text-[11px] font-label-sm font-bold">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Sen</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Sel</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Rab</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary">Kam</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-outline">Jum</span>
+</div>
+</div>
+<!-- Monthly Attendance Percentage -->
+<div class="mt-4">
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface-variant font-medium">Persentase Kehadiran Bulan Ini</span>
+<span class="font-label-sm font-bold text-primary">100%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Mini Stats -->
+<div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-outline-variant/20 text-center">
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-primary">23</p>
+<p class="text-[10px] font-label-sm text-outline">Hadir</p>
+</div>
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-[#92400E]">0</p>
+<p class="text-[10px] font-label-sm text-outline">Terlambat</p>
+</div>
+<div class="p-1.5 bg-surface-container-low rounded-lg">
+<p class="text-label-md font-label-md font-bold text-on-surface">0</p>
+<p class="text-[10px] font-label-sm text-outline">Sakit/Izin</p>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between gap-2">
+<button class="flex-1 py-1.5 px-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-label-sm font-label-sm font-bold transition-all" onclick="alertToast('Menampilkan detail profil guru...')">Detail</button>
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-all" onclick="alertToast('Membuka modal edit data guru...')">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg bg-error-container/50 hover:bg-error-container text-on-error-container transition-all" onclick="alertToast('Konfirmasi hapus data guru')">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- ==================== TAB CONTENT 4: LOG & REKAP ABSENSI ==================== -->
+<div class="tab-pane space-y-6 hidden" id="tab-view-log">
+<!-- Filter Toolbar -->
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 shadow-sm flex flex-col xl:flex-row items-center justify-between gap-4">
+<div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+<!-- Search NIP/Nama -->
+<div class="relative w-full sm:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full pl-9 pr-3 py-2 bg-surface-container-low border border-outline-variant/40 rounded-lg text-body-sm font-body-sm focus:border-primary focus:bg-white" placeholder="Cari nama / NIP..." type="text">
+</div>
+<!-- Date Range Picker mock -->
+<div class="flex items-center gap-1.5 px-3 py-2 bg-surface-container-low border border-outline-variant/40 rounded-lg text-body-sm font-body-sm text-on-surface">
+<span class="material-symbols-outlined text-outline text-[18px]">calendar_today</span>
+<span class="font-label-sm text-[12px]">24 Okt 2024 - 24 Okt 2024</span>
+</div>
+<!-- Status Filter -->
+<select class="px-3 py-2 bg-surface-container-low border border-outline-variant/40 rounded-lg text-body-sm font-body-sm text-on-surface">
+<option value="">Semua Status</option>
+<option value="Hadir">Hadir Tepat Waktu</option>
+<option value="Terlambat">Terlambat</option>
+<option value="Izin">Izin / Sakit</option>
+<option value="PulangCepat">Pulang Cepat</option>
+</select>
+</div>
+<!-- Export Actions -->
+<div class="flex items-center gap-2.5 w-full xl:w-auto justify-end">
+<button class="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg text-label-md font-label-md font-semibold flex items-center gap-2 shadow-sm transition-all active:scale-[0.97]" onclick="openExportModal()">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span class="">Ekspor Data (Excel/CSV/PDF)</span>
+</button>
+</div>
+</div>
+<!-- Comprehensive Data Table -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant/30 text-outline text-label-sm font-label-sm uppercase tracking-wider">
+<th class="py-3.5 px-4">No</th>
+<th class="py-3.5 px-4">Foto &amp; Nama Guru</th>
+<th class="py-3.5 px-4">NIP</th>
+<th class="py-3.5 px-4">Waktu Masuk</th>
+<th class="py-3.5 px-4">Waktu Pulang</th>
+<th class="py-3.5 px-4">Metode</th>
+<th class="py-3.5 px-4">Node ESP32</th>
+<th class="py-3.5 px-4">Status</th>
+<th class="py-3.5 px-4 text-center">Aksi</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20 text-body-sm font-body-sm text-on-surface">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4 font-label-sm text-outline">01</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of Bambang Haryono smiling in school office." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOxcFSVaZ1Hn6APzumwlHvPMqz3qFdyjs3CzU6vhKau0_SCA8mOs8aHFgrwPmQ_6JOA_lOZ3lApYiUw-IXuCbwHzaFtEyM2kpNzcHF28uvu9i5m7jz-UXh5wjpa6jC0WmAfHvbh8Th6OoVzvlb08YJ4EsnlF3Qx04yyTVMRzaDxxLkDmOR-iv03LGMfW50KJamCufgNvKW-B84gD8TxU_joOQTPAMCcNuzLPX9vmAeuMpFMQ-tzUPDCg">
+<div>
+<p class="font-bold text-on-surface">Bambang Haryono, S.Kom</p>
+<p class="text-[11px] text-outline">Produktif RPL</p>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm">198204122005011004</td>
+<td class="py-3 px-4 font-label-md font-bold text-primary">06:58:24</td>
+<td class="py-3 px-4 font-label-md text-outline">--:--:--</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">contactless</span> RFID Card
+                    </span>
+</td>
+<td class="py-3 px-4 font-label-sm text-outline">ESP32-R1 Gate</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0] text-label-sm font-label-sm font-bold">Tepat Waktu</span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Menampilkan rincian verifikasi sensor ESP32')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4 font-label-sm text-outline">02</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of Siti Rahmawati in hijab smiling in teacher room." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCm-Y1Nf92jX4NaXr3lnAR1bKKOfFWh9UHkMbYjKAwc7pHYOnrjDc96Jy9oTNO5iTjTLWB0ADUvgH6iBIQqbpf54JafSpEFIbwbzGhEbf-Y6OVgA_3GCphhW3hUq2ODI8GeRluURAZiueGSzcRQpzyE6SmEVr5k-HfDGLGCFQNz7L33t-4hTbUl9N_-wGCKbpmzLIZ9yi1G6ygE1O75vmKT4SkE5n0VVRYeNt73kwBplOFdCq730PJwzg">
+<div>
+<p class="font-bold text-on-surface">Siti Rahmawati, M.Pd</p>
+<p class="text-[11px] text-outline">Matematika</p>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm">198709152010012008</td>
+<td class="py-3 px-4 font-label-md font-bold text-primary">07:04:11</td>
+<td class="py-3 px-4 font-label-md text-outline">--:--:--</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">fingerprint</span> Biometrik
+                    </span>
+</td>
+<td class="py-3 px-4 font-label-sm text-outline">ESP32-R2 Guru</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0] text-label-sm font-label-sm font-bold">Tepat Waktu</span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Menampilkan rincian verifikasi sensor ESP32')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4 font-label-sm text-outline">03</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of senior educator Drs. Ahmad Fauzi smiling calmly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuJ3xA9yraJoBPsa92-H3aLjThTa3wg5WOyiM5suMPK2LSiUaeB4btLnXtOLzuyJW2saLEVtEB_05nPyk4nubPntpDmhiWw2CJs7tmyuOcXKI2V-FjOrJX4mjBBxZUlU7VG0up6N3ZAy97gTnhmETLdIAKZnA3NlCaEYLlmZNlKUhBdBwbl2jPyiVjPGj9WPBbiscr35P3SM1dVN8Fn13OcYc8L9V3udirC4vst7TAgHA2qofC39miCg">
+<div>
+<p class="font-bold text-on-surface">Drs. Ahmad Fauzi</p>
+<p class="text-[11px] text-outline">Fisika Terapan</p>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm">196901021994031005</td>
+<td class="py-3 px-4 font-label-md font-bold text-[#92400E]">07:27:05</td>
+<td class="py-3 px-4 font-label-md text-outline">--:--:--</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">contactless</span> RFID Card
+                    </span>
+</td>
+<td class="py-3 px-4 font-label-sm text-outline">ESP32-R1 Gate</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-label-sm font-label-sm font-bold">Terlambat</span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Menampilkan rincian verifikasi sensor ESP32')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4 font-label-sm text-outline">04</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Portrait photo of Dewi Lestari female computer educator." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBa0lA9kOsN25yCOoz8YnCtS7uLstjfhNIfzIQKmC1wgc3E72mpPqAv8FLobQ8KErp9MYc1c8AaEPXPFmF62KQ_hglOxdv6fjQT71WnZL8qgmu2Z5SIcurOGAGex8oDr4ZbPXQUgMHBERRMdisUMPhOBC8aLUrubGna9BbE6C2S0MlXrv5lyTHFVfjFpvQvbWcKSmByeG9xcWrZ2aXoW4ZfJTDTLGao_pWjpWOCXlZCRK1PYhgGt5dULQ">
+<div>
+<p class="font-bold text-on-surface">Dewi Lestari, S.T</p>
+<p class="text-[11px] text-outline">Jaringan Komputer</p>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm">199307222019032014</td>
+<td class="py-3 px-4 font-label-md font-bold text-primary">07:09:44</td>
+<td class="py-3 px-4 font-label-md text-outline">--:--:--</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">contactless</span> RFID Card
+                    </span>
+</td>
+<td class="py-3 px-4 font-label-sm text-outline">ESP32-R3 Lab</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0] text-label-sm font-label-sm font-bold">Tepat Waktu</span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Menampilkan rincian verifikasi sensor ESP32')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4 font-label-sm text-outline">05</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Portrait of Nurul Hidayah female English teacher in modest attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTUFDCiBZ4fShenF1vuWeny0SazQEhb_4awJfGOAm1laTOu2HXFKjamxCSLXQLFTMfp2qCG0cgkVY_sB5qY9pk9fJ1IS10uQiAF_kuYCjeNOSBzh6yKWMMh9avNPWmvSpP0Im2xpwCJNrmdf_ClzjN79QtHAwcMLitdeiZq99exj7cNazhp-aVsmsy8Ak4NyLffXXP-b-OEjL0DwADARleZ4HziUxoAjn255GHYwApjoQYEN8GKA9XSA">
+<div>
+<p class="font-bold text-on-surface">Nurul Hidayah, S.Pd</p>
+<p class="text-[11px] text-outline">Bahasa Inggris</p>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm">199105142017012002</td>
+<td class="py-3 px-4 font-label-md text-outline">--:--:--</td>
+<td class="py-3 px-4 font-label-md text-outline">--:--:--</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">description</span> Surat Dokter
+                    </span>
+</td>
+<td class="py-3 px-4 font-label-sm text-outline">-</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/30 text-label-sm font-label-sm font-bold">Izin Sakit</span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Menampilkan lampiran surat keterangan sakit')">
+<span class="material-symbols-outlined text-[18px]">description</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Bar -->
+<div class="p-4 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-body-sm font-body-sm text-outline">
+<span class="">Menampilkan 1-5 dari 48 rekaman presensi</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded border border-outline-variant/40 bg-surface-container-low hover:bg-surface-container text-on-surface disabled:opacity-50" disabled="">Sebelumnya</button>
+<button class="px-3 py-1 rounded bg-primary text-on-primary font-bold">1</button>
+<button class="px-3 py-1 rounded hover:bg-surface-container text-on-surface">2</button>
+<button class="px-3 py-1 rounded hover:bg-surface-container text-on-surface">3</button>
+<button class="px-2.5 py-1 rounded border border-outline-variant/40 bg-surface-container-low hover:bg-surface-container text-on-surface">Berikutnya</button>
+</div>
+</div>
+</div>
+</div>
+<!-- ==================== TAB CONTENT 5: STATUS PERANGKAT ESP32 ==================== -->
+<div class="tab-pane space-y-6 hidden" id="tab-view-status-esp32">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-on-surface">Hardware Telemetry &amp; Node Health Diagnostic</h3>
+<p class="text-body-sm font-body-sm text-outline">Monitoring kondisi real-time board ESP32, pembaca RC522 RFID, dan sensor sidik jari R307</p>
+</div>
+<button class="px-3 py-2 bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md font-bold rounded-lg border border-outline-variant/40 flex items-center gap-1.5" onclick="alertToast('Memeriksa ping seluruh node ESP32...')">
+<span class="material-symbols-outlined text-[18px]">network_ping</span>
+<span class="">Ping Semua Node</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Node 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary pulse-animation"></span>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">ESP32-R1 Gate Utama</h4>
+</div>
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed text-[10px] font-label-sm font-bold">ONLINE</span>
+</div>
+<div class="space-y-2 text-body-sm font-body-sm">
+<div class="flex justify-between"><span class="text-outline">IP Address</span><span class="font-label-sm font-bold text-on-surface">192.168.1.101</span></div>
+<div class="flex justify-between"><span class="text-outline">MAC Address</span><span class="font-label-sm font-bold text-on-surface">24:6F:28:AB:12:01</span></div>
+<div class="flex justify-between"><span class="text-outline">WiFi Signal (RSSI)</span><span class="font-label-sm font-bold text-secondary">-52 dBm (Sangat Baik)</span></div>
+<div class="flex justify-between"><span class="text-outline">Sensor Terpasang</span><span class="font-label-sm text-on-surface">RC522 RFID (13.56 MHz)</span></div>
+<div class="flex justify-between"><span class="text-outline">Uptime</span><span class="font-label-sm text-on-surface">14 hari, 06:22:10</span></div>
+</div>
+<div class="pt-3 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="text-[11px] font-label-sm text-outline">Tap Terakhir: 07:27:05 WIB</span>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Node ESP32 Gate Utama berhasil di-restart')">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</div>
+<!-- Node 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary pulse-animation"></span>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">ESP32-R2 Ruang Guru</h4>
+</div>
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed text-[10px] font-label-sm font-bold">ONLINE</span>
+</div>
+<div class="space-y-2 text-body-sm font-body-sm">
+<div class="flex justify-between"><span class="text-outline">IP Address</span><span class="font-label-sm font-bold text-on-surface">192.168.1.102</span></div>
+<div class="flex justify-between"><span class="text-outline">MAC Address</span><span class="font-label-sm font-bold text-on-surface">24:6F:28:AB:12:02</span></div>
+<div class="flex justify-between"><span class="text-outline">WiFi Signal (RSSI)</span><span class="font-label-sm font-bold text-secondary">-58 dBm (Baik)</span></div>
+<div class="flex justify-between"><span class="text-outline">Sensor Terpasang</span><span class="font-label-sm text-on-surface">Optical Fingerprint R307</span></div>
+<div class="flex justify-between"><span class="text-outline">Uptime</span><span class="font-label-sm text-on-surface">14 hari, 06:19:40</span></div>
+</div>
+<div class="pt-3 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="text-[11px] font-label-sm text-outline">Tap Terakhir: 07:04:11 WIB</span>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Node ESP32 Ruang Guru berhasil di-restart')">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</div>
+<!-- Node 3 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-5 shadow-sm space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary pulse-animation"></span>
+<h4 class="text-headline-sm font-headline-sm font-bold text-on-surface">ESP32-R3 Lab IoT</h4>
+</div>
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed text-[10px] font-label-sm font-bold">ONLINE</span>
+</div>
+<div class="space-y-2 text-body-sm font-body-sm">
+<div class="flex justify-between"><span class="text-outline">IP Address</span><span class="font-label-sm font-bold text-on-surface">192.168.1.103</span></div>
+<div class="flex justify-between"><span class="text-outline">MAC Address</span><span class="font-label-sm font-bold text-on-surface">24:6F:28:AB:12:03</span></div>
+<div class="flex justify-between"><span class="text-outline">WiFi Signal (RSSI)</span><span class="font-label-sm font-bold text-secondary">-64 dBm (Stabil)</span></div>
+<div class="flex justify-between"><span class="text-outline">Sensor Terpasang</span><span class="font-label-sm text-on-surface">RFID Dual RC522 + OLED</span></div>
+<div class="flex justify-between"><span class="text-outline">Uptime</span><span class="font-label-sm text-on-surface">09 hari, 12:44:00</span></div>
+</div>
+<div class="pt-3 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="text-[11px] font-label-sm text-outline">Tap Terakhir: 07:09:44 WIB</span>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant" onclick="alertToast('Node ESP32 Lab IoT berhasil di-restart')">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- ==================== MODAL 1: ENROLL SENSOR BIOMETRIK & RFID ESP32 ==================== -->
+<div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4" id="enroll-modal">
+<div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/40 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-lg bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">contactless</span>
+</div>
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-on-surface">Enroll Sensor Baru ESP32</h3>
+<p class="text-[12px] font-body-sm text-outline">Perekaman Kartu RFID atau Sidik Jari Guru</p>
+</div>
+</div>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant" id="close-enroll-modal-btn">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Sensor Registration Form -->
+<div class="space-y-4">
+<div>
+<label class="block text-body-sm font-body-sm font-semibold text-on-surface mb-1">Pilih Guru Penerima</label>
+<select class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-body-sm font-body-sm">
+<option>Bambang Haryono, S.Kom - NIP. 198204122005011004</option>
+<option>Siti Rahmawati, M.Pd - NIP. 198709152010012008</option>
+<option>Dewi Lestari, S.T - NIP. 199307222019032014</option>
+<option>Rizky Kurniawan, S.Pd - NIP. 199008102015021001</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-body-sm font-body-sm font-semibold text-on-surface mb-1">Pilih Terminal Reader</label>
+<select class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-body-sm font-body-sm">
+<option>ESP32-R1 (Gate Utama)</option>
+<option>ESP32-R2 (Ruang Guru)</option>
+<option>ESP32-R3 (Lab IoT)</option>
+</select>
+</div>
+<div>
+<label class="block text-body-sm font-body-sm font-semibold text-on-surface mb-1">Tipe Sensor</label>
+<select class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-body-sm font-body-sm">
+<option>Kartu RFID (Mifare 1K)</option>
+<option>Biometrik Sidik Jari (R307)</option>
+</select>
+</div>
+</div>
+<!-- Radar Animation / Scanner Interaction Box -->
+<div class="p-6 bg-surface-container-low rounded-xl border-2 border-dashed border-secondary/40 text-center flex flex-col items-center justify-center">
+<div class="relative w-20 h-20 mb-3 flex items-center justify-center">
+<span class="absolute inset-0 rounded-full bg-secondary/20 pulse-animation"></span>
+<span class="material-symbols-outlined text-[44px] text-primary">sensors</span>
+</div>
+<p class="text-body-md font-body-md font-bold text-on-surface" id="enroll-step-text">Menunggu Tempelan Kartu / Jari...</p>
+<p class="text-[12px] font-label-sm text-outline mt-1">Dekatkan kartu RFID ke antena RC522 terminal yang dipilih</p>
+<div class="mt-3 px-3 py-1 bg-surface-container rounded font-label-sm text-[12px] text-primary font-bold">
+            UID Terbaca: <span class="text-secondary" id="mock-uid">E2:89:10:F4</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant/30">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md font-semibold transition-all" onclick="document.getElementById('enroll-modal').classList.add('hidden')">Batal</button>
+<button class="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg text-label-md font-label-md font-bold transition-all shadow-sm" id="btn-save-enroll">Simpan &amp; Daftarkan</button>
+</div>
+</div>
+</div>
+<!-- ==================== MODAL 2: EKSPOR REKAP ABSENSI ==================== -->
+<div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4" id="export-modal">
+<div class="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/40 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-lg bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+</div>
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-on-surface">Ekspor Rekap Absensi</h3>
+<p class="text-[12px] font-body-sm text-outline">Unduh Laporan Format Resmi Sekolah</p>
+</div>
+</div>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant" onclick="closeExportModal()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="space-y-3">
+<label class="block text-body-sm font-body-sm font-semibold text-on-surface">Format File Unduhan</label>
+<label class="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/40 cursor-pointer hover:border-primary transition-all">
+<input checked="" class="text-primary focus:ring-primary" name="export-type" type="radio" value="excel">
+<span class="material-symbols-outlined text-[#107C41] text-[24px]">description</span>
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Microsoft Excel (.xlsx)</p>
+<p class="text-[11px] font-label-sm text-outline">Format tabel terstruktur lengkap dengan kalkulasi jam</p>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/40 cursor-pointer hover:border-primary transition-all">
+<input class="text-primary focus:ring-primary" name="export-type" type="radio" value="csv">
+<span class="material-symbols-outlined text-primary text-[24px]">csv</span>
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Comma Separated Values (.csv)</p>
+<p class="text-[11px] font-label-sm text-outline">Untuk import langsung ke aplikasi Dapodik / Simpatika</p>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/40 cursor-pointer hover:border-primary transition-all">
+<input class="text-primary focus:ring-primary" name="export-type" type="radio" value="pdf">
+<span class="material-symbols-outlined text-[#BA1A1A] text-[24px]">picture_as_pdf</span>
+<div>
+<p class="text-body-sm font-body-sm font-bold text-on-surface">Dokumen PDF Laporan (.pdf)</p>
+<p class="text-[11px] font-label-sm text-outline">Lengkap dengan lembar pengesahan &amp; tanda tangan Kepala Sekolah</p>
+</div>
+</label>
+</div>
+<div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant/30">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md font-semibold transition-all" onclick="closeExportModal()">Batal</button>
+<button class="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg text-label-md font-label-md font-bold transition-all shadow-sm" onclick="handleExportSubmit()">Unduh File Sekarang</button>
+</div>
+</div>
+</div>
+<!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-inverse-surface text-inverse-on-surface px-4 py-3 rounded-xl shadow-lg border border-outline/30 flex items-center gap-3" id="toast">
+<span class="material-symbols-outlined text-secondary-fixed text-[22px]">check_circle</span>
+<span class="text-body-sm font-body-sm font-medium" id="toast-message">Operasi berhasil dilakukan.</span>
+</div>
+<!-- ==================== COMPLETE JAVASCRIPT LOGIC ==================== -->
+<script>
+    // Live Digital Clock (WIB)
+    function updateLiveClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const clockElement = document.getElementById('live-clock');
+      if (clockElement) {
+        clockElement.textContent = `${hours}:${minutes}:${seconds} WIB`;
+      }
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Toast Alert Helper
+    function alertToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      if (toast && toastMsg) {
+        toastMsg.textContent = message;
+        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        }, 3500);
+      }
+    }
+
+    // Tab Switching Logic
+    const navItems = document.querySelectorAll('.nav-item');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const breadcrumb = document.getElementById('active-breadcrumb');
+    const pageHeading = document.getElementById('page-heading');
+
+    const tabHeadings = {
+      'ringkasan': { breadcrumb: 'Ringkasan', heading: 'Ringkasan Dashboard Presensi' },
+      'jadwal': { breadcrumb: 'Jadwal Mengajar', heading: 'Jadwal Mengajar Guru Hari Ini' },
+      'guru': { breadcrumb: 'Daftar Guru', heading: 'Direktori & Manajemen Guru' },
+      'log': { breadcrumb: 'Log & Rekap Absensi', heading: 'Log Lengkap & Rekapitulasi Presensi' },
+      'status-esp32': { breadcrumb: 'Status Perangkat ESP32', heading: 'Telemetri Perangkat IoT Gateway' }
+    };
+
+    navItems.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+
+        // Update active class on nav
+        navItems.forEach(item => {
+          item.className = 'nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors text-label-md duration-150 active:scale-[0.98]';
+        });
+        btn.className = 'nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-on-primary font-medium text-label-md transition-transform duration-100 ease-out active:scale-[0.98]';
+
+        // Show/hide tab pane
+        tabPanes.forEach(pane => {
+          pane.classList.add('hidden');
+        });
+        const activePane = document.getElementById(`tab-view-${targetTab}`);
+        if (activePane) {
+          activePane.classList.remove('hidden');
+        }
+
+        // Update titles
+        if (tabHeadings[targetTab]) {
+          breadcrumb.textContent = tabHeadings[targetTab].breadcrumb;
+          pageHeading.textContent = tabHeadings[targetTab].heading;
+        }
+      });
+    });
+
+    // Day Pills Filter Switcher (Jadwal Tab)
+    const dayButtons = document.querySelectorAll('.day-btn');
+    dayButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        dayButtons.forEach(b => {
+          b.className = 'day-btn px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md font-semibold transition-all';
+        });
+        button.className = 'day-btn px-3.5 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-label-md font-semibold transition-all';
+      });
+    });
+
+    // Modal 1: Enroll Sensor
+    const enrollModal = document.getElementById('enroll-modal');
+    const openEnrollBtn = document.getElementById('open-enroll-modal-btn');
+    const closeEnrollBtn = document.getElementById('close-enroll-modal-btn');
+    const saveEnrollBtn = document.getElementById('btn-save-enroll');
+
+    openEnrollBtn.addEventListener('click', () => {
+      enrollModal.classList.remove('hidden');
+    });
+    closeEnrollBtn.addEventListener('click', () => {
+      enrollModal.classList.add('hidden');
+    });
+    saveEnrollBtn.addEventListener('click', () => {
+      enrollModal.classList.add('hidden');
+      alertToast('Pendaftaran sensor RFID berhasil disimpan ke database IoT!');
+    });
+
+    // Modal 2: Ekspor Rekap
+    const exportModal = document.getElementById('export-modal');
+    function openExportModal() {
+      exportModal.classList.remove('hidden');
+    }
+    function closeExportModal() {
+      exportModal.classList.add('hidden');
+    }
+    function handleExportSubmit() {
+      closeExportModal();
+      alertToast('File rekapitulasi absensi sedang di-generate & diunduh...');
+    }
+
+    // Google Sheets Sync Buttons
+    const btnSyncNow = document.getElementById('btn-sync-now');
+    const btnForceSync = document.getElementById('btn-force-sync');
+    const syncText = document.getElementById('sync-text');
+
+    function triggerSyncAnimation() {
+      alertToast('Sinkronisasi Google Spreadsheet berhasil diperbarui!');
+      if (syncText) {
+        syncText.textContent = 'Tersinkron: Baru saja';
+      }
+    }
+    if (btnSyncNow) btnSyncNow.addEventListener('click', triggerSyncAnimation);
+    if (btnForceSync) btnForceSync.addEventListener('click', triggerSyncAnimation);
+
+    // Filter simulation on teacher search
+    const teacherSearch = document.getElementById('teacher-search');
+    if (teacherSearch) {
+      teacherSearch.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('#teacher-list-grid > div');
+        cards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          card.style.display = text.includes(query) ? 'flex' : 'none';
+        });
+      });
+    }
+  </script>
+
+
+</body></html>

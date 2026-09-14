@@ -1,0 +1,968 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <HardwareSerial.h>
+#include <Adafruit_Fingerprint.h>
+#include <LiquidCrystal_I2C.h>
+#include <WiFi.h>
+#include <WiFiManager.h>
+#include <HTTPClient.h>
+#include <WebServer.h>
+#include <Preferences.h>
+
+WebServer server(80);
+Preferences preferences;
+
+// ==========================================
+// KONFIGURASI MESIN & PREFIX ID UNIK
+// ==========================================
+// Setiap mesin ESP32 memiliki identitas dan prefix ID unik agar tidak terjadi duplikasi ID di database.
+// - Mesin 1: DEVICE_NAME = "A", DEVICE_PREFIX = "A_" -> ID Sidik Jari: A_1, A_2, dst.
+// - Mesin 2: DEVICE_NAME = "B", DEVICE_PREFIX = "B_" -> ID Sidik Jari: B_1, B_2, dst.
+// - Mesin 3: DEVICE_NAME = "C", DEVICE_PREFIX = "C_" -> ID Sidik Jari: C_1, C_2, dst.
+const String DEVICE_NAME   = "A";   // Ganti untuk mesin lain (A, B, C, ...)
+const String DEVICE_PREFIX = "A_";  // Prefix ID unik di database Google Sheets
+
+// ==========================================
+// KONFIGURASI GOOGLE APPS SCRIPT
+// ==========================================
+String GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyffhQr8cHdbZg-P9ToWxnNja3ltyDh1W5ZOdbUSQ1NKwNBIbcD1XUN3l6Dg6j1VR5XIQ/exec";
+
+// ==========================================
+// KARTU MASTER (ADMIN FISIK)
+// ==========================================
+const String MASTER_RFID_UID = "95:EF:15:07"; // UID kartu khusus pembuka akses & pendaftaran lokal
+
+// ==========================================
+// KONFIGURASI PIN HARDWARE
+// ==========================================
+#define RST_PIN    4
+#define SS_PIN     5
+#define BUZZER_PIN 15
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+MFRC522 rfid(SS_PIN, RST_PIN);
+HardwareSerial mySerial(2);
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
+
+// ==========================================
+// VARIABEL GLOBAL
+// ==========================================
+String lastUID = "";
+unsigned long lastTapTime = 0;
+
+int rfidCount = 0;
+String registeredRfids[50]; 
+
+bool webEnrollRequested = false;
+bool webEnrollRfidRequested = false;
+bool resetWifiRequested = false;
+unsigned long adminUnlockTime = 0;
+const unsigned long UNLOCK_DURATION = 180000; // 3 menit
+
+// State Machine Konfirmasi Pulang
+String pendingID = "";
+String pendingType = "";
+unsigned long pendingTimeout = 0;
+unsigned long pendingValidAfter = 0;
+
+// Timer Polling Perintah Cloud (Queue Relay)
+unsigned long lastCloudPoll = 0;
+const unsigned long CLOUD_POLL_INTERVAL = 4000; // Polling antrean setiap 4 detik saat standby
+
+// ==========================================
+// HELPER URL ENCODE
+// ==========================================
+String urlEncode(String str) {
+  String encoded = "";
+  char c;
+  char code0;
+  char code1;
+  for (int i = 0; i < str.length(); i++) {
+    c = str.charAt(i);
+    if (c == ' ') {
+      encoded += "+";
+    } else if (isalnum(c)) {
+      encoded += c;
+    } else {
+      code1 = (c & 0xf) + '0';
+      if ((c & 0xf) > 9) code1 = (c & 0xf) - 10 + 'A';
+      c = (c >> 4) & 0xf;
+      code0 = c + '0';
+      if (c > 9) code0 = c - 10 + 'A';
+      encoded += '%';
+      encoded += code0;
+      encoded += code1;
+    }
+  }
+  return encoded;
+}
+
+// ==========================================
+// HALAMAN WEB SERVER LOKAL ESP32 (PORT 80)
+// ==========================================
+const char* htmlPage = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Mesin Absensi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; margin: 0; padding: 20px; color: #e2e8f0; }
+    .container { max-width: 600px; margin: auto; }
+    .card { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid #334155; }
+    h2, h3 { margin-top: 0; color: #fff; }
+    .status-bar { background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(56, 189, 248, 0.3); }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; word-break: break-all; }
+    th { background-color: #0f172a; color: #94a3b8; }
+    .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background-color: #3b82f6; width: 100%; justify-content: center; margin-bottom: 10px; }
+    .btn-success { background-color: #10b981; width: 100%; justify-content: center; margin-bottom: 10px; }
+    .btn-warning { background-color: #f59e0b; color: #111; }
+    .btn-danger { background-color: #ef4444; padding: 6px 10px; font-size: 13px; }
+    .loader { border: 4px solid #334155; border-top: 4px solid #38bdf8; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="status-bar">
+      <div><i class="fa-solid fa-microchip"></i> Mesin: <span id="deviceName">Memuat...</span> &bull; <i class="fa-solid fa-wifi"></i> <span id="ssidText">...</span></div>
+      <button onclick="resetWifi()" class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;"><i class="fa-solid fa-rotate"></i> Ganti WiFi</button>
+    </div>
+
+    <div class="card">
+      <button onclick="enrollFinger()" class="btn btn-primary"><i class="fa-solid fa-fingerprint"></i> Daftarkan Jari Baru Langsung</button>
+      <div id="enrollMsg" style="color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 10px; display: none;">Silakan tempelkan jari ke alat sekarang!</div>
+      
+      <button onclick="enrollRfid()" class="btn btn-success"><i class="fa-solid fa-id-card"></i> Daftarkan Kartu RFID Baru Langsung</button>
+      <div id="enrollRfidMsg" style="color: #10b981; text-align: center; font-weight: bold; margin-bottom: 10px; display: none;">Silakan tap kartu RFID ke alat sekarang!</div>
+    </div>
+
+    <div class="card">
+      <h3>Daftar Identitas di Mesin Ini</h3>
+      <div id="loading"><div class="loader"></div> Mengambil data dari Google Sheets...</div>
+      <table id="userTable" style="display:none;">
+        <thead><tr><th>ID Unik</th><th>Nama Guru</th><th>Aksi</th></tr></thead>
+        <tbody id="userBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
+)rawliteral";
+
+const char* jsPage = R"rawliteral(
+var gasUrl = "";
+var espIds = [];
+var isUnlocked = false;
+var pollInterval;
+var devName = "";
+var devPrefix = "";
+
+function deleteId(id, name) {
+  if(!isUnlocked) return alert("Akses ditolak! Tap Kartu Admin di mesin.");
+  if(confirm("Yakin ingin menghapus " + name + " (ID: " + id + ")?")) {
+    fetch('/api/delete?id=' + encodeURIComponent(id))
+      .then(response => response.text())
+      .then(result => {
+         alert(result);
+         checkStatus();
+      });
+  }
+}
+
+function enrollFinger() {
+  if(!isUnlocked) return alert("Akses ditolak! Tap Kartu Admin di mesin.");
+  fetch('/api/enroll').then(() => {
+    document.getElementById('enrollMsg').style.display = 'block';
+    setTimeout(() => { document.getElementById('enrollMsg').style.display = 'none'; }, 15000);
+  });
+}
+
+function enrollRfid() {
+  if(!isUnlocked) return alert("Akses ditolak! Tap Kartu Admin di mesin.");
+  fetch('/api/enrollrfid').then(() => {
+    document.getElementById('enrollRfidMsg').style.display = 'block';
+    setTimeout(() => { document.getElementById('enrollRfidMsg').style.display = 'none'; }, 15000);
+  });
+}
+
+function resetWifi() {
+  if(!isUnlocked) return alert("Akses ditolak! Tap Kartu Admin di mesin.");
+  var newSsid = prompt("Masukkan NAMA WiFi baru:\n(Kosongkan lalu klik OK jika ingin mode Hotspot)");
+  if (newSsid === null) return; 
+  if (newSsid.trim() === "") {
+    if(confirm("Alat memancarkan Hotspot 'SET_WIFI_MESIN'. Lanjutkan?")) {
+      fetch('/api/resetwifi').then(() => alert("Silakan hubungkan HP ke WiFi SET_WIFI_MESIN."));
+    }
+  } else {
+    var newPass = prompt("Masukkan PASSWORD WiFi untuk '" + newSsid + "':");
+    if (newPass === null) return;
+    if(confirm("Alat akan menyambung ke WiFi '" + newSsid + "'. Lanjutkan?")) {
+      fetch('/api/setwifi?ssid=' + encodeURIComponent(newSsid) + '&pass=' + encodeURIComponent(newPass)).then(() => alert("Alat direstart!"));
+    }
+  }
+}
+
+function renderTable(sheetData) {
+  document.getElementById('loading').style.display = 'none';
+  var tbody = document.getElementById('userBody');
+  var table = document.getElementById('userTable');
+  
+  if(espIds.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Alat masih kosong</td></tr>";
+  } else {
+    var html = "";
+    espIds.forEach(function(fid) {
+      var user = sheetData.find(u => String(u.id).toUpperCase() == String(fid).toUpperCase());
+      var nameDisplay = user ? (user.name) : "<span style='color:#f87171; font-style:italic;'>Belum terdaftar di G-Sheets</span>";
+      
+      html += "<tr>";
+      html += "<td><strong>" + fid + "</strong></td>";
+      html += "<td>" + nameDisplay + "</td>";
+      
+      if (isUnlocked) {
+         html += "<td><button onclick='deleteId(\"" + fid + "\", \"" + (user ? user.name : "ID " + fid) + "\")' class='btn btn-danger'><i class='fa-solid fa-trash'></i></button></td>";
+      } else {
+         html += "<td><i class='fa-solid fa-lock' style='color:#64748b'></i></td>";
+      }
+      html += "</tr>";
+    });
+    tbody.innerHTML = html;
+  }
+  table.style.display = 'table';
+}
+
+function loadData(data) {
+  var users = (data && data.users) ? data.users : (Array.isArray(data) ? data : []);
+  window.lastSheetData = users;
+  renderTable(users);
+}
+
+function unlockWithPin() {
+  var pin = prompt("Masukkan PIN Teknisi:");
+  if(pin) {
+    fetch('/api/unlock?pin=' + encodeURIComponent(pin))
+      .then(res => res.text())
+      .then(result => {
+         if(result === "OK") {
+           alert("Akses Teknisi Dibuka!");
+           checkStatus();
+         } else {
+           alert("PIN Salah atau Ditolak!");
+         }
+      });
+  }
+}
+
+function checkStatus() {
+  fetch('/api/info')
+    .then(response => response.json())
+    .then(info => {
+      document.getElementById('ssidText').innerText = info.ssid;
+      document.getElementById('deviceName').innerText = "Mesin " + info.device + " (" + info.prefix + ")";
+      gasUrl = info.gasUrl;
+      isUnlocked = info.isUnlocked;
+      devName = info.device;
+      devPrefix = info.prefix;
+      
+      var lockMsg = document.getElementById('lockMsg');
+      var actionButtons = document.getElementById('actionButtons');
+      
+      if (isUnlocked) {
+        if(lockMsg) lockMsg.style.display = 'none';
+        if(actionButtons) actionButtons.style.display = 'block';
+      } else {
+        if(!lockMsg) {
+          var card = actionButtons.parentElement;
+          var div = document.createElement('div');
+          div.id = 'lockMsg';
+          div.innerHTML = "<div style='text-align:center; padding: 18px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);'><i class='fa-solid fa-lock' style='font-size: 26px; margin-bottom:8px;'></i><br><b>Dashboard Mesin Terkunci</b><br><small>Tap Kartu Admin di mesin (aktif 3 menit) atau gunakan PIN.</small><br><br><button onclick='unlockWithPin()' class='btn btn-warning' style='font-size:12px; padding: 6px 12px;'><i class='fa-solid fa-key'></i> Buka dengan PIN Teknisi</button></div>";
+          card.insertBefore(div, actionButtons);
+        } else {
+          lockMsg.style.display = 'block';
+        }
+        actionButtons.style.display = 'none';
+      }
+      return fetch('/api/ids');
+    })
+    .then(response => response.json())
+    .then(ids => {
+       espIds = ids;
+       if (window.lastSheetData) {
+          renderTable(window.lastSheetData);
+       } else {
+          var script = document.createElement('script');
+          script.src = gasUrl + "?action=getUsers&callback=loadData";
+          document.body.appendChild(script);
+       }
+    })
+    .catch(err => console.log(err));
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  var btns = document.querySelectorAll(".card .btn");
+  if(btns.length > 0) {
+    var wrapper = document.createElement('div');
+    wrapper.id = "actionButtons";
+    btns[0].parentNode.insertBefore(wrapper, btns[0]);
+    btns.forEach(b => wrapper.appendChild(b));
+    var m1 = document.getElementById("enrollMsg");
+    var m2 = document.getElementById("enrollRfidMsg");
+    if(m1) wrapper.appendChild(m1);
+    if(m2) wrapper.appendChild(m2);
+  }
+  checkStatus();
+  pollInterval = setInterval(checkStatus, 3000);
+});
+)rawliteral";
+
+// ==========================================
+// FUNGSI BUZZER (Active Low)
+// ==========================================
+void initBuzzer() { pinMode(BUZZER_PIN, OUTPUT); digitalWrite(BUZZER_PIN, HIGH); }
+void buzzerOn() { digitalWrite(BUZZER_PIN, LOW); }
+void buzzerOff() { digitalWrite(BUZZER_PIN, HIGH); }
+void buzzerBeep(int duration = 100) { buzzerOn(); delay(duration); buzzerOff(); delay(50); }
+void buzzerSuccess() { buzzerOn(); delay(100); buzzerOff(); delay(50); buzzerOn(); delay(100); buzzerOff(); }
+void buzzerFail() { buzzerOn(); delay(500); buzzerOff(); delay(100); }
+void buzzerError() { for(int i=0;i<3;i++){buzzerOn();delay(50);buzzerOff();delay(50);} }
+void buzzerRequireConfirm() { buzzerBeep(150); delay(100); buzzerBeep(150); delay(100); buzzerBeep(150); }
+
+// ==========================================
+// FUNGSI LCD (16x2 I2C)
+// ==========================================
+void lcdInit() { lcd.init(); delay(50); lcd.backlight(); delay(50); lcd.clear(); }
+void lcdPrintCenter(String text, int row = 0) {
+  int padding = (16 - text.length()) / 2;
+  if (padding < 0) padding = 0;
+  lcd.setCursor(padding, row); lcd.print(text);
+}
+void lcdPrint(String line1, String line2 = "") {
+  lcd.clear();
+  lcdPrintCenter(line1, 0);
+  if (line2.length() > 0) lcdPrintCenter(line2, 1);
+}
+void lcdReady() {
+  lcd.clear();
+  lcdPrintCenter("MESIN " + DEVICE_NAME + " SIAP", 0);
+  lcdPrintCenter("TEMPEL JARI/KARTU", 1);
+}
+
+// ==========================================
+// FUNGSI KONEKSI WIFI
+// ==========================================
+void connectWiFi() {
+  lcdPrint("Menghubungkan", "WiFi...");
+  Serial.println("Memulai WiFiManager...");
+  WiFiManager wm;
+  wm.setCaptivePortalEnable(true); 
+  wm.setConnectRetries(3);
+  wm.setConfigPortalTimeout(180);
+  
+  String apName = "SET_WIFI_MESIN_" + DEVICE_NAME;
+  bool res = wm.autoConnect(apName.c_str()); 
+
+  if (!res) {
+    Serial.println("Gagal terhubung ke WiFi!");
+    lcdPrint("WiFi Gagal", "Restarting...");
+    buzzerError();
+    delay(3000);
+    ESP.restart();
+  } 
+  
+  Serial.println("WiFi Terhubung! IP: " + WiFi.localIP().toString());
+  lcdPrint("WiFi Terhubung!", WiFi.localIP().toString());
+  buzzerSuccess();
+  delay(2500); 
+}
+
+// ==========================================
+// PREFERENCES (MEMORI LOKAL RFID)
+// ==========================================
+void loadRfidsFromMemory() {
+  preferences.begin("rfid_data", false);
+  rfidCount = preferences.getInt("count", 0);
+  if (rfidCount > 50) rfidCount = 50;
+  for (int i = 0; i < rfidCount; i++) {
+    registeredRfids[i] = preferences.getString(("c" + String(i)).c_str(), "");
+  }
+}
+void saveRfidsToMemory() {
+  preferences.putInt("count", rfidCount);
+  for (int i = 0; i < rfidCount; i++) {
+    preferences.putString(("c" + String(i)).c_str(), registeredRfids[i]);
+  }
+}
+bool isRfidRegistered(String uid) {
+  for (int i = 0; i < rfidCount; i++) {
+    if (registeredRfids[i] == uid) return true;
+  }
+  return false;
+}
+void addRfidLocal(String uid) {
+  if (rfidCount < 50 && !isRfidRegistered(uid)) {
+    registeredRfids[rfidCount] = uid;
+    rfidCount++;
+    saveRfidsToMemory();
+  }
+}
+void removeRfidLocal(String uid) {
+  for (int i = 0; i < rfidCount; i++) {
+    if (registeredRfids[i] == uid) {
+      for (int j = i; j < rfidCount - 1; j++) {
+        registeredRfids[j] = registeredRfids[j+1];
+      }
+      rfidCount--;
+      saveRfidsToMemory();
+      break;
+    }
+  }
+}
+
+// ==========================================
+// FUNGSI KOMUNIKASI CLOUD GOOGLE SHEETS
+// ==========================================
+String sendDataToGoogleSheetsRaw(String type, String id, String action) {
+  if (WiFi.status() != WL_CONNECTED) {
+    lcdPrint("WiFi Terputus!", "Menghubungkan...");
+    connectWiFi();
+    if (WiFi.status() != WL_CONNECTED) {
+      lcdPrint("Gagal Kirim", "Cek Internet");
+      buzzerError(); delay(2000); lcdReady();
+      return "ERROR";
+    }
+  }
+
+  if (action == "TAP") lcdPrint("Memproses Absen", "Mohon Tunggu...");
+  else lcdPrint("Konfirmasi...", "Mohon Tunggu...");
+  
+  Serial.println("Mengirim data ke Server... Action: " + action + ", ID: " + id);
+  
+  HTTPClient http;
+  String url = GOOGLE_SCRIPT_URL + "?type=" + type + "&id=" + urlEncode(id) + "&action=" + action;
+  
+  http.begin(url);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  int httpCode = http.GET();
+  String payload = "";
+  
+  if (httpCode > 0) {
+    payload = http.getString();
+    Serial.println("Respons: " + payload);
+    
+    int firstPipe = payload.indexOf('|');
+    int secondPipe = payload.indexOf('|', firstPipe + 1);
+    
+    if (firstPipe > 0 && secondPipe > 0) {
+      String baris1 = payload.substring(firstPipe + 1, secondPipe);
+      String baris2 = payload.substring(secondPipe + 1);
+      
+      lcd.clear();
+      if(baris1.length() > 16) baris1 = baris1.substring(0, 16);
+      if(baris2.length() > 16) baris2 = baris2.substring(0, 16);
+      lcdPrintCenter(baris1, 0);
+      lcdPrintCenter(baris2, 1);
+    }
+  } else {
+    Serial.println("Error HTTP GET");
+    lcdPrint("Gagal Hubungi", "Server!");
+    payload = "ERROR";
+  }
+  
+  http.end();
+  
+  if (!payload.startsWith("CONFIRM")) {
+    delay(2500);
+    lcdReady();
+  }
+  return payload;
+}
+
+void processAttendance(String type, String id) {
+  if (pendingID == id && millis() > pendingValidAfter && millis() < pendingTimeout) {
+    String response = sendDataToGoogleSheetsRaw(type, id, "CONFIRM_OUT");
+    if (response.startsWith("OK")) buzzerSuccess();
+    else buzzerError();
+    pendingID = "";
+  } else {
+    String response = sendDataToGoogleSheetsRaw(type, id, "TAP");
+    if (response.startsWith("OK")) {
+       buzzerSuccess();
+       pendingID = "";
+    } else if (response.startsWith("CONFIRM")) {
+       buzzerRequireConfirm(); 
+       pendingID = id;
+       pendingType = type;
+       pendingValidAfter = millis() + 1500; 
+       pendingTimeout = millis() + 10000;   
+    } else {
+       buzzerFail();
+       pendingID = "";
+    }
+  }
+}
+
+// ==========================================
+// FUNGSI RFID & SIDIK JARI
+// ==========================================
+String getCardUID() {
+  String uid = "";
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    if (rfid.uid.uidByte[i] < 0x10) uid += "0";
+    uid += String(rfid.uid.uidByte[i], HEX);
+    if (i < rfid.uid.size - 1) uid += ":";
+  }
+  uid.toUpperCase();
+  return uid;
+}
+
+uint8_t getEmptyFingerID() {
+  for (uint8_t i = 1; i <= 127; i++) {
+    if (finger.loadModel(i) != FINGERPRINT_OK) return i;
+  }
+  return 0;
+}
+
+// Pendaftaran Sidik Jari (Mendukung pendaftaran jarak jauh via Cloud Queue)
+void enrollFingerprint(String targetName = "", String targetRole = "Guru Mapel", String cmdId = "") {
+  uint8_t id = getEmptyFingerID();
+  if (id == 0) {
+    lcdPrint("Memory Penuh", "Hapus Data!");
+    buzzerError(); delay(2000); lcdReady(); return;
+  }
+  
+  if (targetName != "") {
+    lcdPrint("DAFTAR JARI:", targetName.substring(0, 16));
+  } else {
+    lcdPrint("TEMPELKAN JARI", "Mendaftar...");
+  }
+  
+  unsigned long timeout = millis() + 20000;
+  while (finger.getImage() != FINGERPRINT_OK) {
+    if (millis() > timeout) {
+      lcdPrint("BATAL", "Waktu Habis");
+      buzzerError(); delay(2000); lcdReady(); return;
+    }
+    delay(100);
+  }
+  if (finger.image2Tz(1) != FINGERPRINT_OK) { buzzerError(); delay(2000); lcdReady(); return; }
+  
+  if (finger.fingerSearch() == FINGERPRINT_OK) {
+    lcdPrint("JARI SUDAH", "TERDAFTAR!");
+    buzzerFail(); delay(2000); lcdReady(); return;
+  }
+  
+  buzzerBeep(100);
+  lcdPrint("ANGKAT JARI", "Tunggu...");
+  delay(1800);
+  
+  lcdPrint("TEMPELKAN LAGI", "Jari Yang Sama");
+  timeout = millis() + 20000;
+  while (finger.getImage() != FINGERPRINT_OK) {
+    if (millis() > timeout) {
+      lcdPrint("BATAL", "Waktu Habis");
+      buzzerError(); delay(2000); lcdReady(); return;
+    }
+    delay(100);
+  }
+  if (finger.image2Tz(2) != FINGERPRINT_OK) { buzzerError(); delay(2000); lcdReady(); return; }
+  buzzerBeep(100);
+  
+  if (finger.createModel() != FINGERPRINT_OK) { lcdPrint("JARI", "TIDAK COCOK"); buzzerError(); delay(2000); lcdReady(); return; }
+  if (finger.storeModel(id) != FINGERPRINT_OK) { lcdPrint("GAGAL", "MENYIMPAN"); buzzerError(); delay(2000); lcdReady(); return; }
+  
+  // Bentuk ID unik dengan prefix mesin (contoh: A_1, B_1)
+  String fullUniqueId = DEVICE_PREFIX + String(id);
+
+  lcd.clear();
+  lcdPrintCenter("BERHASIL!", 0);
+  lcd.setCursor(0, 1); lcd.print("ID: " + fullUniqueId);
+  buzzerSuccess();
+  delay(2000);
+
+  // Jika pendaftaran dipicu dari Web Dashboard (Cloud Queue), simpan otomatis ke Google Sheets!
+  if (targetName != "") {
+    lcdPrint("Sinkronisasi Web", "Mohon Tunggu...");
+    HTTPClient http;
+    String url = GOOGLE_SCRIPT_URL + "?action=completeEnroll&device=" + DEVICE_NAME +
+                 "&id=" + urlEncode(fullUniqueId) +
+                 "&name=" + urlEncode(targetName) +
+                 "&role=" + urlEncode(targetRole) +
+                 "&type=FINGER&commandId=" + urlEncode(cmdId);
+    http.begin(url);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    int code = http.GET();
+    http.end();
+
+    if (code > 0) {
+      lcdPrint("TERDAFTAR DI WEB", fullUniqueId);
+      buzzerSuccess();
+    } else {
+      lcdPrint("Tersimpan Lokal", "Koneksi Web Gagal");
+      buzzerFail();
+    }
+    delay(2500);
+  }
+
+  lcdReady();
+}
+
+// Pendaftaran Kartu RFID (Mendukung pendaftaran jarak jauh via Cloud Queue)
+void enrollRfidCard(String targetName = "", String targetRole = "Guru Mapel", String cmdId = "") {
+  if (targetName != "") {
+    lcdPrint("TAP KARTU BARU:", targetName.substring(0, 16));
+  } else {
+    lcdPrint("TEMPELKAN KARTU", "Mendaftar...");
+  }
+
+  unsigned long timeout = millis() + 20000;
+  while (millis() < timeout) {
+    if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+      String uid = getCardUID();
+      buzzerBeep(100);
+      
+      if (isRfidRegistered(uid) || uid == MASTER_RFID_UID) {
+        lcdPrint("KARTU SUDAH", "TERDAFTAR!");
+        buzzerFail();
+      } else {
+        addRfidLocal(uid);
+        lcd.clear();
+        lcdPrintCenter("BERHASIL!", 0);
+        lcdPrintCenter("UID: " + uid, 1);
+        buzzerSuccess();
+        delay(2000);
+
+        // Jika dipicu dari Web Dashboard, simpan otomatis ke Google Sheets
+        if (targetName != "") {
+          lcdPrint("Sinkronisasi Web", "Mohon Tunggu...");
+          HTTPClient http;
+          String url = GOOGLE_SCRIPT_URL + "?action=completeEnroll&device=" + DEVICE_NAME +
+                       "&id=" + urlEncode(uid) +
+                       "&name=" + urlEncode(targetName) +
+                       "&role=" + urlEncode(targetRole) +
+                       "&type=RFID&commandId=" + urlEncode(cmdId);
+          http.begin(url);
+          http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+          http.GET();
+          http.end();
+          lcdPrint("TERDAFTAR DI WEB", uid);
+          buzzerSuccess();
+          delay(2500);
+        }
+      }
+      rfid.PICC_HaltA();
+      rfid.PCD_StopCrypto1();
+      lcdReady();
+      return;
+    }
+    delay(50);
+  }
+  lcdPrint("TIMEOUT", "Batal Mendaftar");
+  buzzerError(); delay(2000); lcdReady();
+}
+
+void checkFingerprint() {
+  if (finger.getImage() != FINGERPRINT_OK) return;
+  if (finger.image2Tz() != FINGERPRINT_OK) { buzzerError(); return; }
+  
+  if (finger.fingerSearch() == FINGERPRINT_OK) {
+    buzzerBeep(100);
+    // Menggunakan Prefix ID unik mesin (contoh: A_1, B_2)
+    String uniqueId = DEVICE_PREFIX + String(finger.fingerID);
+    processAttendance("FINGER", uniqueId);
+  } else {
+    buzzerFail();
+    lcdPrint("JARI TIDAK", "DIKENAL!");
+    delay(2000);
+    lcdReady();
+  }
+}
+
+// ==========================================
+// CLOUD RELAY: CEK ANTREAN PERINTAH DARI WEB
+// ==========================================
+void checkCloudCommands() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  if (pendingID != "") return; // Jangan cek jika sedang ada proses konfirmasi pulang
+  if (millis() - lastTapTime < 4000) return; // Jangan cek jika baru saja ada aktivitas absen
+  if (millis() - lastCloudPoll < CLOUD_POLL_INTERVAL) return;
+  lastCloudPoll = millis();
+
+  HTTPClient http;
+  String url = GOOGLE_SCRIPT_URL + "?action=getCommand&device=" + DEVICE_NAME;
+  http.begin(url);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  http.setTimeout(3000);
+  int httpCode = http.GET();
+
+  if (httpCode > 0) {
+    String payload = http.getString();
+    payload.trim();
+
+    // Format balasan: CMD|COMMAND|TARGET_NAME|TARGET_ROLE|TARGET_TYPE|COMMAND_ID
+    if (payload.startsWith("CMD|")) {
+      int p1 = payload.indexOf('|');
+      int p2 = payload.indexOf('|', p1 + 1);
+      int p3 = payload.indexOf('|', p2 + 1);
+      int p4 = payload.indexOf('|', p3 + 1);
+      int p5 = payload.indexOf('|', p4 + 1);
+
+      String cmd = payload.substring(p1 + 1, p2);
+      String tName = payload.substring(p2 + 1, p3);
+      String tRole = payload.substring(p3 + 1, p4);
+      String tType = payload.substring(p4 + 1, p5);
+      String cId = payload.substring(p5 + 1);
+
+      Serial.println("Perintah Cloud Diterima: " + cmd + " untuk: " + tName);
+
+      if (cmd == "ENROLL_FINGER") {
+        buzzerRequireConfirm();
+        enrollFingerprint(tName, tRole, cId);
+      } else if (cmd == "ENROLL_RFID") {
+        buzzerRequireConfirm();
+        enrollRfidCard(tName, tRole, cId);
+      }
+    }
+  }
+  http.end();
+}
+
+// ==========================================
+// HANDLER ROUTE WEB SERVER LOKAL ESP32
+// ==========================================
+void handleRoot() { server.send(200, "text/html", htmlPage); }
+void handleJS() { server.send(200, "application/javascript", jsPage); }
+
+void handleInfoAPI() {
+  bool isUnlocked = (adminUnlockTime > 0) && (millis() - adminUnlockTime < UNLOCK_DURATION);
+  String json = "{\"ssid\":\"" + WiFi.SSID() + "\",\"device\":\"" + DEVICE_NAME + "\",\"prefix\":\"" + DEVICE_PREFIX + "\",\"gasUrl\":\"" + GOOGLE_SCRIPT_URL + "\",\"isUnlocked\":" + (isUnlocked ? "true" : "false") + "}";
+  server.send(200, "application/json", json);
+}
+
+void handleIdsAPI() {
+  String json = "[";
+  bool first = true;
+  // Ambil data Fingerprint ber-prefix unik
+  for (int id = 1; id <= 127; id++) {
+    if (finger.loadModel(id) == FINGERPRINT_OK) {
+      if (!first) json += ",";
+      json += "\"" + DEVICE_PREFIX + String(id) + "\"";
+      first = false;
+    }
+  }
+  // Ambil data RFID
+  for (int i = 0; i < rfidCount; i++) {
+    if (!first) json += ",";
+    json += "\"" + registeredRfids[i] + "\"";
+    first = false;
+  }
+  json += "]";
+  server.send(200, "application/json", json);
+}
+
+void handleDeleteAPI() {
+  if (server.hasArg("id")) {
+    String idToDelete = server.arg("id");
+    lcdPrint("Menghapus", idToDelete);
+    
+    // Cek apakah RFID (mengandung titik dua)
+    if (idToDelete.indexOf(":") > 0) {
+      if (isRfidRegistered(idToDelete)) {
+        removeRfidLocal(idToDelete);
+        server.send(200, "text/plain", "Berhasil menghapus Kartu " + idToDelete);
+        buzzerSuccess();
+      } else {
+        server.send(200, "text/plain", "Gagal! Kartu tidak ditemukan.");
+        buzzerError();
+      }
+    } else {
+      // Fingerprint (hilangkan prefix jika ada, contoh A_1 -> 1)
+      String cleanId = idToDelete;
+      if (cleanId.startsWith(DEVICE_PREFIX)) {
+        cleanId = cleanId.substring(DEVICE_PREFIX.length());
+      }
+      int fid = cleanId.toInt();
+      if (finger.deleteModel(fid) == FINGERPRINT_OK) {
+        server.send(200, "text/plain", "Berhasil menghapus Jari ID " + idToDelete);
+        buzzerSuccess();
+      } else {
+        server.send(200, "text/plain", "Gagal! ID tidak ditemukan di mesin ini.");
+        buzzerError();
+      }
+    }
+    delay(2000); lcdReady();
+  } else {
+    server.send(400, "text/plain", "Bad Request");
+  }
+}
+
+void handleEnrollAPI() { webEnrollRequested = true; server.send(200, "text/plain", "OK"); }
+void handleEnrollRfidAPI() { webEnrollRfidRequested = true; server.send(200, "text/plain", "OK"); }
+void handleResetWifiAPI() { resetWifiRequested = true; server.send(200, "text/plain", "OK"); }
+
+void handleUnlockAPI() {
+  if (server.hasArg("pin") && server.arg("pin") == "120170") {
+    adminUnlockTime = millis();
+    lcdPrint("AKSES TEKNISI", "WEB DIBUKA");
+    buzzerSuccess();
+    server.send(200, "text/plain", "OK");
+    delay(2000);
+    lcdReady();
+  } else {
+    buzzerError();
+    server.send(403, "text/plain", "Forbidden");
+  }
+}
+
+void handleSetWifiAPI() {
+  if (server.hasArg("ssid") && server.hasArg("pass")) {
+    server.send(200, "text/plain", "OK");
+    delay(500);
+    lcdPrint("MENGUBAH WIFI", "Restarting...");
+    buzzerSuccess();
+    WiFi.begin(server.arg("ssid").c_str(), server.arg("pass").c_str());
+    delay(1000); ESP.restart();
+  } else {
+    server.send(400, "text/plain", "Bad Request");
+  }
+}
+
+// ==========================================
+// SETUP & LOOP UTAMA
+// ==========================================
+void setup() {
+  Serial.begin(115200);
+  while (!Serial);
+
+  initBuzzer();
+  lcdInit();
+  lcdPrint("  SISTEM ABSEN ", "MESIN " + DEVICE_NAME + " (ID: " + DEVICE_PREFIX + "*)");
+  buzzerSuccess();
+  delay(1800);
+
+  preferences.begin("rfid_data", false);
+  loadRfidsFromMemory();
+
+  SPI.begin();
+  rfid.PCD_Init();
+  
+  mySerial.begin(57600, SERIAL_8N1, 17, 16);
+  delay(100);
+  finger.begin(57600);
+  
+  if (!finger.verifyPassword()) {
+    lcdPrint("ERROR SENSOR", "FINGERPRINT");
+    buzzerError();
+    while(1) delay(1000);
+  }
+
+  connectWiFi();
+  
+  // Inisialisasi Web Server Lokal
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/app.js", HTTP_GET, handleJS);
+  server.on("/api/info", HTTP_GET, handleInfoAPI);
+  server.on("/api/ids", HTTP_GET, handleIdsAPI);
+  server.on("/api/delete", HTTP_GET, handleDeleteAPI);
+  server.on("/api/enroll", HTTP_GET, handleEnrollAPI);
+  server.on("/api/enrollrfid", HTTP_GET, handleEnrollRfidAPI);
+  server.on("/api/resetwifi", HTTP_GET, handleResetWifiAPI);
+  server.on("/api/setwifi", HTTP_GET, handleSetWifiAPI);
+  server.on("/api/unlock", HTTP_GET, handleUnlockAPI);
+  server.begin();
+  
+  lcdReady();
+}
+
+void loop() {
+  server.handleClient();
+
+  // Polling perintah pendaftaran dari cloud saat standby
+  checkCloudCommands();
+
+  // Pendaftaran Manual via Web Server Lokal ESP
+  if (webEnrollRequested) {
+    webEnrollRequested = false;
+    buzzerSuccess();
+    lcdPrint("TAMBAH VIA WEB", "Daftar Jari");
+    delay(1500);
+    enrollFingerprint();
+  }
+  
+  if (webEnrollRfidRequested) {
+    webEnrollRfidRequested = false;
+    buzzerSuccess();
+    lcdPrint("TAMBAH VIA WEB", "Daftar RFID");
+    delay(1500);
+    enrollRfidCard();
+  }
+
+  if (resetWifiRequested) {
+    resetWifiRequested = false;
+    lcdPrint("GANTI WIFI", "Buka Hotspot...");
+    buzzerBeep(500);
+    
+    WiFiManager wm;
+    wm.setCaptivePortalEnable(true);
+    String apName = "SET_WIFI_MESIN_" + DEVICE_NAME;
+    wm.startConfigPortal(apName.c_str());
+    ESP.restart();
+  }
+  
+  // Reset status konfirmasi pulang jika timeout 10 detik
+  if (pendingID != "" && millis() > pendingTimeout) {
+    lcdReady();
+    pendingID = "";
+  }
+
+  // 1. Deteksi Kartu RFID
+  if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+    String uid = getCardUID();
+    
+    if (uid == MASTER_RFID_UID) {
+      if (lastUID == MASTER_RFID_UID && (millis() - lastTapTime < 8000)) {
+        buzzerSuccess();
+        lcdPrint("KARTU ADMIN", "Mode Daftar Jari");
+        delay(1500);
+        enrollFingerprint();
+        lastUID = "";
+      } else {
+        adminUnlockTime = millis();
+        lastUID = uid;
+        lastTapTime = millis();
+        buzzerSuccess();
+        lcdPrint("AKSES WEB DIBUKA", "TAP LAGI=Daftar");
+      }
+    }
+    // Jika bukan master, proses absensi biasa
+    else if (millis() - lastTapTime > 2000 || pendingID == uid) {
+      lastUID = uid;
+      lastTapTime = millis();
+      buzzerBeep(100);
+      
+      if (isRfidRegistered(uid)) {
+        processAttendance("RFID", uid);
+      } else {
+        lcdPrint("KARTU BELUM", "TERDAFTAR!");
+        buzzerFail();
+        delay(2000);
+        lcdReady();
+      }
+    }
+    rfid.PICC_HaltA();
+    rfid.PCD_StopCrypto1();
+  }
+  
+  if (lastUID == MASTER_RFID_UID && millis() - lastTapTime > 8000) {
+    lcdReady();
+    lastUID = "";
+  }
+  
+  // 2. Deteksi Sidik Jari
+  checkFingerprint();
+}
