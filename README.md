@@ -169,7 +169,7 @@ Buka browser di `http://localhost:8765`.
 
 #### B. Deploy Gratis ke Vercel:
 1. Hubungkan akun GitHub Anda ke [Vercel](https://vercel.com).
-2. Import repositori ini (`Alat_Absen_FingerPrint`).
+2. Import repositori ini (`absensi_smadta`).
 3. Set *Root Directory* ke: `Dashboard_Absen`.
 4. Klik **Deploy**. Web portal langsung aktif dengan HTTPS gratis!
 

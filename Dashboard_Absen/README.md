@@ -2,7 +2,7 @@
 
 Web Dashboard modern dan responsif untuk monitoring kehadiran guru dan pengurus sekolah berbasis Alat Absen (Fingerprint / RFID) yang tersinkronisasi langsung (*live & real-time*) dengan Google Spreadsheet.
 
-Repository: [https://github.com/Cimwory/dashboardabsensmadta](https://github.com/Cimwory/dashboardabsensmadta)
+Repository: [https://github.com/alkindi-ros/absensi_smadta](https://github.com/alkindi-ros/absensi_smadta)
 
 ---
 
@@ -86,8 +86,8 @@ dashboard_absen/
 
 1. Buka [vercel.com](https://vercel.com) dan masuk menggunakan akun GitHub Anda.
 2. Klik **"Add New Project"**.
-3. Import repositori: `Cimwory/dashboardabsensmadta`.
-4. Jika repositori berisi folder `Dashboard_Absen` langsung sebagai root, biarkan pengaturan *Root Directory* default (`./`).
+3. Import repositori: `alkindi-ros/absensi_smadta`.
+4. Pilih folder root: `Dashboard_Absen`.
 5. Klik **"Deploy"**. Website Anda akan aktif secara publik dengan domain gratis HTTPS (contoh: `https://dashboardabsensmadta.vercel.app`).
 
 ---
