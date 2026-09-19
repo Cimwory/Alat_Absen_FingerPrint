@@ -12,31 +12,30 @@ const CONFIG = {
   JAM_PULANG_STANDAR: "15:30:00"
 };
 
-// Daftar Tab Sheet Log Riwayat Absensi yang ada di Spreadsheet (Diperbarui s/d September 2026)
+// Daftar Tab Sheet Log Riwayat Absensi yang ada di Spreadsheet (Diperbarui s/d 19 September 2026)
 const KNOWN_LOG_SHEETS = [
   'Log_19-09-2026', 'Log_18-09-2026', 'Log_17-09-2026', 'Log_16-09-2026',
-  'Log_15-09-2026', 'Log_14-09-2026', 'Log_13-09-2026', 'Log_12-09-2026',
-  'Log_11-09-2026', 'Log_10-09-2026', 'Log_09-09-2026', 'Log_08-09-2026',
-  'Log_07-09-2026', 'Log_05-09-2026', 'Log_04-09-2026', 'Log_03-09-2026',
-  'Log_27-08-2026', 'Log_24-08-2026', 'Log_22-08-2026', 'Log_21-08-2026',
-  'Log_20-08-2026', 'Log_19-08-2026', 'Log_18-08-2026', 'Log_17-08-2026',
-  'Log_15-08-2026', 'Log_14-08-2026', 'Log_13-08-2026', 'Log_10-08-2026',
-  'Log_08-08-2026', 'Log_07-08-2026', 'Log_06-08-2026', 'Log_05-08-2026',
-  'Log_04-08-2026', 'Log_03-08-2026', 'Log_01-08-2026', 'Log_31-07-2026',
-  'Log_30-07-2026', 'Log_29-07-2026', 'Log_28-07-2026', 'Log_27-07-2026',
-  'Log_25-07-2026', 'Log_24-07-2026', 'Log_23-07-2026', 'Log_20-07-2026'
+  'Log_09-09-2026', 'Log_08-09-2026', 'Log_07-09-2026', 'Log_05-09-2026',
+  'Log_04-09-2026', 'Log_03-09-2026', 'Log_27-08-2026', 'Log_24-08-2026',
+  'Log_22-08-2026', 'Log_21-08-2026', 'Log_20-08-2026', 'Log_19-08-2026',
+  'Log_18-08-2026', 'Log_17-08-2026', 'Log_15-08-2026', 'Log_14-08-2026',
+  'Log_13-08-2026', 'Log_10-08-2026', 'Log_08-08-2026', 'Log_07-08-2026',
+  'Log_06-08-2026', 'Log_05-08-2026', 'Log_04-08-2026', 'Log_03-08-2026',
+  'Log_01-08-2026', 'Log_31-07-2026', 'Log_30-07-2026', 'Log_29-07-2026',
+  'Log_28-07-2026', 'Log_27-07-2026', 'Log_25-07-2026', 'Log_24-07-2026',
+  'Log_23-07-2026', 'Log_20-07-2026'
 ];
 
 /**
  * Mendapatkan daftar tab log absensi secara dinamis dan real-time.
  * Menggabungkan tab riwayat yang diketahui + otomatis meng-generate nama tab hari ini,
- * hari esok, dan 60 hari ke belakang agar absensi hari baru selalu langsung terdeteksi
- * tanpa perlu update kode secara manual.
+ * hari esok, dan 4 hari ke belakang agar absensi hari baru selalu langsung terdeteksi
+ * tanpa membombardir Google API secara berlebihan.
  */
 function getActiveLogSheetsList() {
   const sheetSet = new Set(KNOWN_LOG_SHEETS);
   const now = new Date();
-  for (let offset = -1; offset <= 60; offset++) {
+  for (let offset = -1; offset <= 4; offset++) {
     const d = new Date(now);
     d.setDate(d.getDate() - offset);
     const dd = String(d.getDate()).padStart(2, '0');
@@ -235,214 +234,222 @@ async function loadLiveGoogleSheetData() {
       }
     }
 
-    // 2. Tarik Data Log Absensi dari Seluruh Sheet Log Riwayat (Dinamis & Real-Time)
+    // 2. Tarik Data Log Absensi dari Seluruh Sheet Log Riwayat (Dinamis & Terjadwal)
     const logsToFetch = getActiveLogSheetsList();
     const allFetchedLogs = [];
 
-    const fetchPromises = logsToFetch.map(async (sheetName) => {
-      try {
-        const logUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&tq=select%20*&_=${Date.now()}`;
-        const logRes = await fetch(logUrl);
-        const logText = await logRes.text();
-        const logJson = parseGvizResponse(logText);
+    // Gunakan batching (6 request sekaligus) agar tidak terkena rate limiting Google GViz
+    const BATCH_SIZE = 6;
+    for (let bIdx = 0; bIdx < logsToFetch.length; bIdx += BATCH_SIZE) {
+      const currentBatch = logsToFetch.slice(bIdx, bIdx + BATCH_SIZE);
+      await Promise.all(currentBatch.map(async (sheetName) => {
+        try {
+          const logUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&tq=select%20*&_=${Date.now()}`;
+          const logRes = await fetch(logUrl);
+          const logText = await logRes.text();
+          const logJson = parseGvizResponse(logText);
 
-        if (!logJson || !logJson.table || !logJson.table.rows) return;
+          if (!logJson || !logJson.table || !logJson.table.rows) return;
 
-        // PENTING: Validasi bahwa sheet ini adalah sheet Log Presensi asli, bukan fallback ke "Database Guru"
-        // Jika nama tab tidak ada di spreadsheet, Google Sheets GViz otomatis mengembalikan sheet pertama ("Database Guru").
-        const colLabels = logJson.table.cols.map(c => (c?.label || '').toLowerCase().trim());
-        const isDatabaseGuruFallback = colLabels.some(l => l.includes('(kartu/jari)')) || 
-                                       (colLabels.includes('nama guru') && !colLabels.some(l => l.includes('tanggal') || l.includes('masuk') || l.includes('waktu')));
-        if (isDatabaseGuruFallback) {
-          // Tab log ini tidak ada di spreadsheet, jangan diproses agar tidak merusak data
-          return;
-        }
+          // PENTING: Validasi bahwa sheet ini adalah sheet Log Presensi asli, bukan fallback ke "Database Guru"
+          // Jika nama tab tidak ada di spreadsheet, Google Sheets GViz otomatis mengembalikan sheet pertama ("Database Guru").
+          const colLabels = logJson.table.cols.map(c => (c?.label || '').toLowerCase().trim());
+          const isDatabaseGuruFallback = colLabels.some(l => l.includes('(kartu/jari)')) || 
+                                         (colLabels.includes('nama guru') && !colLabels.some(l => l.includes('tanggal') || l.includes('masuk') || l.includes('waktu')));
+          if (isDatabaseGuruFallback) {
+            // Tab log ini tidak ada di spreadsheet, jangan diproses agar tidak merusak data
+            return;
+          }
 
-        // Ambil nama sheet untuk tanggal cadangan (misal: Log_09-09-2026 -> 09-09-2026)
-        const tglFallback = sheetName.replace("Log_", "");
+          // Ambil nama sheet untuk tanggal cadangan (misal: Log_09-09-2026 -> 09-09-2026)
+          const tglFallback = sheetName.replace("Log_", "");
 
-        // Deteksi indeks kolom berdasarkan label header sheet secara dinamis
-        let hasWaktuMasukCol = false;
-        let colTanggal = -1, colId = -1, colNama = -1, colJabatan = -1, colTipe = -1;
-        let colMasuk = -1, colKeluar = -1, colWaktu = -1, colTipeAbsen = -1, colStatus = -1;
+          // Deteksi indeks kolom berdasarkan label header sheet secara dinamis
+          let hasWaktuMasukCol = false;
+          let colTanggal = -1, colId = -1, colNama = -1, colJabatan = -1, colTipe = -1;
+          let colMasuk = -1, colKeluar = -1, colWaktu = -1, colTipeAbsen = -1, colStatus = -1;
 
-        logJson.table.cols.forEach((col, idx) => {
-          if (!col || !col.label) return;
-          const lbl = col.label.toLowerCase().trim();
-          if (lbl.includes('tanggal')) colTanggal = idx;
-          else if (lbl === 'id' || lbl === '# id' || lbl.includes('(kartu/jari)')) colId = idx;
-          else if (lbl.includes('nama')) colNama = idx;
-          else if (lbl.includes('jabatan')) colJabatan = idx;
-          else if (lbl.includes('masuk')) { colMasuk = idx; hasWaktuMasukCol = true; }
-          else if (lbl.includes('keluar')) colKeluar = idx;
-          else if (lbl.includes('status')) colStatus = idx;
-          else if (lbl.includes('tipe absen')) colTipeAbsen = idx;
-          else if (lbl.includes('tipe') || lbl.includes('metode')) colTipe = idx;
-          else if (lbl.includes('waktu') && colMasuk === -1) colWaktu = idx;
-        });
+          logJson.table.cols.forEach((col, idx) => {
+            if (!col || !col.label) return;
+            const lbl = col.label.toLowerCase().trim();
+            if (lbl.includes('tanggal')) colTanggal = idx;
+            else if (lbl === 'id' || lbl === '# id' || lbl.includes('(kartu/jari)')) colId = idx;
+            else if (lbl.includes('nama')) colNama = idx;
+            else if (lbl.includes('jabatan')) colJabatan = idx;
+            else if (lbl.includes('masuk')) { colMasuk = idx; hasWaktuMasukCol = true; }
+            else if (lbl.includes('keluar')) colKeluar = idx;
+            else if (lbl.includes('status')) colStatus = idx;
+            else if (lbl.includes('tipe absen')) colTipeAbsen = idx;
+            else if (lbl.includes('tipe') || lbl.includes('metode')) colTipe = idx;
+            else if (lbl.includes('waktu') && colMasuk === -1) colWaktu = idx;
+          });
 
-        const hasLogCols = colTanggal >= 0 || colMasuk >= 0 || colWaktu >= 0 || colTipeAbsen >= 0;
-        if (!hasLogCols) return;
+          const hasLogCols = colTanggal >= 0 || colMasuk >= 0 || colWaktu >= 0 || colTipeAbsen >= 0;
+          if (!hasLogCols) return;
 
-        const isOlderFormat = !hasWaktuMasukCol;
+          const isOlderFormat = !hasWaktuMasukCol;
 
-        if (isOlderFormat) {
-          // FORMAT LAMA (Juli - sebagian Agustus): Baris MASUK dan PULANG tercatat terpisah
-          // Konsolidasikan data masuk & pulang per guru untuk tanggal yang sama
-          const dayTeacherMap = new Map();
+          if (isOlderFormat) {
+            // FORMAT LAMA (Juli - sebagian Agustus): Baris MASUK dan PULANG tercatat terpisah
+            // Konsolidasikan data masuk & pulang per guru untuk tanggal yang sama
+            const dayTeacherMap = new Map();
 
-          logJson.table.rows.forEach(r => {
-            if (!r || !r.c) return;
-            const getVal = (idx) => {
-              if (idx < 0 || !r.c[idx]) return "";
-              return r.c[idx].f || (r.c[idx].v !== null && r.c[idx].v !== undefined ? String(r.c[idx].v) : "");
-            };
+            logJson.table.rows.forEach(r => {
+              if (!r || !r.c) return;
+              const getVal = (idx) => {
+                if (idx < 0 || !r.c[idx]) return "";
+                return r.c[idx].f || (r.c[idx].v !== null && r.c[idx].v !== undefined ? String(r.c[idx].v) : "");
+              };
 
-            let tglRaw = getVal(colTanggal >= 0 ? colTanggal : 0);
-            let tgl = (tglRaw && (tglRaw.includes('-') || tglRaw.includes('/')) && tglRaw.length >= 8) ? tglRaw : tglFallback;
-            let waktu = formatGvizDateString(getVal(colWaktu >= 0 ? colWaktu : 1));
-            let tipeAbsen = (getVal(colTipeAbsen >= 0 ? colTipeAbsen : 2) || "").toUpperCase().trim();
-            let nama = getVal(colNama >= 0 ? colNama : 3).trim();
-            let jabatan = getVal(colJabatan >= 0 ? colJabatan : 4).trim();
-            let sensor = getVal(colTipe >= 0 ? colTipe : 7) || "FINGER";
-            let idVal = getVal(colId >= 0 ? colId : 8);
+              let tglRaw = getVal(colTanggal >= 0 ? colTanggal : 0);
+              let tgl = (tglRaw && (tglRaw.includes('-') || tglRaw.includes('/')) && tglRaw.length >= 8) ? tglRaw : tglFallback;
+              let waktu = formatGvizDateString(getVal(colWaktu >= 0 ? colWaktu : 1));
+              let tipeAbsen = (getVal(colTipeAbsen >= 0 ? colTipeAbsen : 2) || "").toUpperCase().trim();
+              let nama = getVal(colNama >= 0 ? colNama : 3).trim();
+              let jabatan = getVal(colJabatan >= 0 ? colJabatan : 4).trim();
+              let sensor = getVal(colTipe >= 0 ? colTipe : 7) || "FINGER";
+              let idVal = getVal(colId >= 0 ? colId : 8);
 
-            // Lewati baris header atau kosong
-            if (!nama || nama.toLowerCase().includes("nama") || nama === "MASUK" || nama === "PULANG") return;
-            if (waktu === "FINGER" || waktu === "RFID") return;
-            if (!tipeAbsen) {
-              tipeAbsen = waktu ? "MASUK" : "";
-            }
+              // Lewati baris header atau kosong
+              if (!nama || nama.toLowerCase().includes("nama") || nama === "MASUK" || nama === "PULANG") return;
+              if (waktu === "FINGER" || waktu === "RFID") return;
+              if (!tipeAbsen) {
+                tipeAbsen = waktu ? "MASUK" : "";
+              }
 
-            // Cocokkan dengan Master Guru jika ID belum ada
-            if (!idVal && nama) {
-              const foundG = masterGuru.find(g => g.name.toLowerCase() === nama.toLowerCase());
-              if (foundG) idVal = foundG.id;
-            }
+              // Cocokkan dengan Master Guru jika ID belum ada
+              if (!idVal && nama) {
+                const foundG = masterGuru.find(g => g.name.toLowerCase() === nama.toLowerCase());
+                if (foundG) idVal = foundG.id;
+              }
 
-            const teacherKey = (idVal ? `ID_${idVal}` : `NAME_${nama.toLowerCase()}`);
+              const teacherKey = (idVal ? `ID_${idVal}` : `NAME_${nama.toLowerCase()}`);
 
-            if (!dayTeacherMap.has(teacherKey)) {
-              dayTeacherMap.set(teacherKey, {
-                tanggal: tgl,
-                id: idVal,
-                nama: nama,
-                jabatan: jabatan,
-                tipe: sensor,
-                waktuMasuk: "-",
-                waktuKeluar: "-"
+              if (!dayTeacherMap.has(teacherKey)) {
+                dayTeacherMap.set(teacherKey, {
+                  tanggal: tgl,
+                  id: idVal,
+                  nama: nama,
+                  jabatan: jabatan,
+                  tipe: sensor,
+                  waktuMasuk: "-",
+                  waktuKeluar: "-"
+                });
+              }
+
+              const item = dayTeacherMap.get(teacherKey);
+              if (idVal && !item.id) item.id = idVal;
+              if (jabatan && !item.jabatan) item.jabatan = jabatan;
+              if (sensor && item.tipe === "FINGER") item.tipe = sensor;
+
+              // Catat Waktu Masuk dan Waktu Keluar (Pulang)
+              if (tipeAbsen.includes("MASUK")) {
+                if (item.waktuMasuk === "-" || waktu < item.waktuMasuk) {
+                  item.waktuMasuk = waktu;
+                }
+              } else if (tipeAbsen.includes("PULANG") || tipeAbsen.includes("KELUAR")) {
+                if (item.waktuKeluar === "-" || waktu > item.waktuKeluar) {
+                  item.waktuKeluar = waktu;
+                }
+              } else {
+                if (item.waktuMasuk === "-") item.waktuMasuk = waktu;
+              }
+            });
+
+            // Masukkan hasil konsolidasi format lama ke allFetchedLogs
+            for (const item of dayTeacherMap.values()) {
+              if (!item.tanggal || (!item.tanggal.includes('-') && !item.tanggal.includes('/')) || item.tanggal.length < 8) continue;
+              if (item.waktuMasuk === 'FINGER' || item.waktuMasuk === 'RFID') continue;
+              if (item.waktuMasuk === '-' && item.waktuKeluar === '-') continue;
+
+              const guruObj = masterGuru.find(g => String(g.id) === String(item.id) || g.name.toLowerCase() === item.nama.toLowerCase());
+              const status = item.waktuKeluar !== "-" ? "TAP OUT" : "TAP IN";
+
+              allFetchedLogs.push({
+                id: `LOG_${item.tanggal}_${item.id || Math.random().toString(36).substring(7)}`,
+                tanggal: item.tanggal,
+                hari: getDayFromDateString(item.tanggal),
+                guruId: item.id || (guruObj ? guruObj.id : "-"),
+                nama: item.nama,
+                jabatan: item.jabatan || (guruObj ? guruObj.role : "Guru Mapel"),
+                kategori: guruObj ? guruObj.category : "PENGAJAR",
+                tipe: item.tipe || (guruObj ? guruObj.sensorType : "FINGER"),
+                waktuMasuk: item.waktuMasuk,
+                waktuKeluar: item.waktuKeluar,
+                status: status
               });
             }
 
-            const item = dayTeacherMap.get(teacherKey);
-            if (idVal && !item.id) item.id = idVal;
-            if (jabatan && !item.jabatan) item.jabatan = jabatan;
-            if (sensor && item.tipe === "FINGER") item.tipe = sensor;
+          } else {
+            // FORMAT BARU (Akhir Agustus - September): Kolom Waktu Masuk & Waktu Keluar sudah tersedia
+            logJson.table.rows.forEach(r => {
+              if (!r || !r.c) return;
+              const getVal = (idx) => {
+                if (idx < 0 || !r.c[idx]) return "";
+                return r.c[idx].f || (r.c[idx].v !== null && r.c[idx].v !== undefined ? String(r.c[idx].v) : "");
+              };
 
-            // Catat Waktu Masuk dan Waktu Keluar (Pulang)
-            if (tipeAbsen.includes("MASUK")) {
-              if (item.waktuMasuk === "-" || waktu < item.waktuMasuk) {
-                item.waktuMasuk = waktu;
+              let tglRaw = getVal(colTanggal >= 0 ? colTanggal : 0);
+              let tgl = (tglRaw && (tglRaw.includes('-') || tglRaw.includes('/')) && tglRaw.length >= 8) ? tglRaw : tglFallback;
+              let idVal = getVal(colId >= 0 ? colId : 1);
+              let nama = getVal(colNama >= 0 ? colNama : 2).trim();
+              let jabatan = getVal(colJabatan >= 0 ? colJabatan : 3).trim();
+              let sensor = getVal(colTipe >= 0 ? colTipe : 4) || "FINGER";
+              let masuk = formatGvizDateString(getVal(colMasuk >= 0 ? colMasuk : 5)) || "-";
+              let keluar = formatGvizDateString(getVal(colKeluar >= 0 ? colKeluar : 6)) || "-";
+              let status = getVal(colStatus >= 0 ? colStatus : 7);
+
+              if (!nama || nama.toLowerCase().includes("nama")) return;
+              if (!tgl || (!tgl.includes('-') && !tgl.includes('/')) || tgl.length < 8) return;
+              if (masuk === 'FINGER' || masuk === 'RFID') return;
+              if (masuk === '-' && keluar === '-') return;
+
+              // Jika ID kosong tapi nama ada, cocokkan dengan Database Guru
+              if (!idVal && nama) {
+                const foundG = masterGuru.find(g => g.name.toLowerCase() === nama.toLowerCase());
+                if (foundG) idVal = foundG.id;
               }
-            } else if (tipeAbsen.includes("PULANG") || tipeAbsen.includes("KELUAR")) {
-              if (item.waktuKeluar === "-" || waktu > item.waktuKeluar) {
-                item.waktuKeluar = waktu;
+
+              // Jika nama kosong tapi ID ada, cocokkan dengan Database Guru
+              if (!nama && idVal) {
+                const foundG = masterGuru.find(g => String(g.id) === String(idVal));
+                if (foundG) {
+                  nama = foundG.name;
+                  jabatan = jabatan || foundG.role;
+                }
               }
-            } else {
-              if (item.waktuMasuk === "-") item.waktuMasuk = waktu;
-            }
-          });
 
-          // Masukkan hasil konsolidasi format lama ke allFetchedLogs
-          for (const item of dayTeacherMap.values()) {
-            if (!item.tanggal || (!item.tanggal.includes('-') && !item.tanggal.includes('/')) || item.tanggal.length < 8) continue;
-            if (item.waktuMasuk === 'FINGER' || item.waktuMasuk === 'RFID') continue;
-            if (item.waktuMasuk === '-' && item.waktuKeluar === '-') continue;
+              if (!status) {
+                status = (keluar && keluar !== "-") ? "TAP OUT" : "TAP IN";
+              }
 
-            const guruObj = masterGuru.find(g => String(g.id) === String(item.id) || g.name.toLowerCase() === item.nama.toLowerCase());
-            const status = item.waktuKeluar !== "-" ? "TAP OUT" : "TAP IN";
+              const guruObj = masterGuru.find(g => String(g.id) === String(idVal) || g.name.toLowerCase() === nama.toLowerCase());
 
-            allFetchedLogs.push({
-              id: `LOG_${item.tanggal}_${item.id || Math.random().toString(36).substring(7)}`,
-              tanggal: item.tanggal,
-              hari: getDayFromDateString(item.tanggal),
-              guruId: item.id || (guruObj ? guruObj.id : "-"),
-              nama: item.nama,
-              jabatan: item.jabatan || (guruObj ? guruObj.role : "Guru Mapel"),
-              kategori: guruObj ? guruObj.category : "PENGAJAR",
-              tipe: item.tipe || (guruObj ? guruObj.sensorType : "FINGER"),
-              waktuMasuk: item.waktuMasuk,
-              waktuKeluar: item.waktuKeluar,
-              status: status
+              allFetchedLogs.push({
+                id: `LOG_${tgl}_${idVal || Math.random().toString(36).substring(7)}`,
+                tanggal: tgl,
+                hari: getDayFromDateString(tgl),
+                guruId: idVal || (guruObj ? guruObj.id : "-"),
+                nama: nama,
+                jabatan: jabatan || (guruObj ? guruObj.role : "Guru Mapel"),
+                kategori: guruObj ? guruObj.category : "PENGAJAR",
+                tipe: sensor || (guruObj ? guruObj.sensorType : "FINGER"),
+                waktuMasuk: masuk,
+                waktuKeluar: keluar,
+                status: status
+              });
             });
           }
-
-        } else {
-          // FORMAT BARU (Akhir Agustus - September): Kolom Waktu Masuk & Waktu Keluar sudah tersedia
-          logJson.table.rows.forEach(r => {
-            if (!r || !r.c) return;
-            const getVal = (idx) => {
-              if (idx < 0 || !r.c[idx]) return "";
-              return r.c[idx].f || (r.c[idx].v !== null && r.c[idx].v !== undefined ? String(r.c[idx].v) : "");
-            };
-
-            let tglRaw = getVal(colTanggal >= 0 ? colTanggal : 0);
-            let tgl = (tglRaw && (tglRaw.includes('-') || tglRaw.includes('/')) && tglRaw.length >= 8) ? tglRaw : tglFallback;
-            let idVal = getVal(colId >= 0 ? colId : 1);
-            let nama = getVal(colNama >= 0 ? colNama : 2).trim();
-            let jabatan = getVal(colJabatan >= 0 ? colJabatan : 3).trim();
-            let sensor = getVal(colTipe >= 0 ? colTipe : 4) || "FINGER";
-            let masuk = formatGvizDateString(getVal(colMasuk >= 0 ? colMasuk : 5)) || "-";
-            let keluar = formatGvizDateString(getVal(colKeluar >= 0 ? colKeluar : 6)) || "-";
-            let status = getVal(colStatus >= 0 ? colStatus : 7);
-
-            if (!nama || nama.toLowerCase().includes("nama")) return;
-            if (!tgl || (!tgl.includes('-') && !tgl.includes('/')) || tgl.length < 8) return;
-            if (masuk === 'FINGER' || masuk === 'RFID') return;
-            if (masuk === '-' && keluar === '-') return;
-
-            // Jika ID kosong tapi nama ada, cocokkan dengan Database Guru
-            if (!idVal && nama) {
-              const foundG = masterGuru.find(g => g.name.toLowerCase() === nama.toLowerCase());
-              if (foundG) idVal = foundG.id;
-            }
-
-            // Jika nama kosong tapi ID ada, cocokkan dengan Database Guru
-            if (!nama && idVal) {
-              const foundG = masterGuru.find(g => String(g.id) === String(idVal));
-              if (foundG) {
-                nama = foundG.name;
-                jabatan = jabatan || foundG.role;
-              }
-            }
-
-            if (!status) {
-              status = (keluar && keluar !== "-") ? "TAP OUT" : "TAP IN";
-            }
-
-            const guruObj = masterGuru.find(g => String(g.id) === String(idVal) || g.name.toLowerCase() === nama.toLowerCase());
-
-            allFetchedLogs.push({
-              id: `LOG_${tgl}_${idVal || Math.random().toString(36).substring(7)}`,
-              tanggal: tgl,
-              hari: getDayFromDateString(tgl),
-              guruId: idVal || (guruObj ? guruObj.id : "-"),
-              nama: nama,
-              jabatan: jabatan || (guruObj ? guruObj.role : "Guru Mapel"),
-              kategori: guruObj ? guruObj.category : "PENGAJAR",
-              tipe: sensor || (guruObj ? guruObj.sensorType : "FINGER"),
-              waktuMasuk: masuk,
-              waktuKeluar: keluar,
-              status: status
-            });
-          });
+        } catch (err) {
+          console.warn(`Gagal memuat log sheet ${sheetName}:`, err);
         }
-      } catch (err) {
-        console.warn(`Gagal memuat log sheet ${sheetName}:`, err);
-      }
-    });
+      }));
 
-    await Promise.all(fetchPromises);
+      // Jeda mikro antar-batch untuk stabilitas Google API
+      if (bIdx + BATCH_SIZE < logsToFetch.length) {
+        await new Promise(r => setTimeout(r, 40));
+      }
+    }
 
     if (allFetchedLogs.length > 0) {
       // Urutkan dari tanggal terbaru secara kronologis (September -> Agustus -> Juli)
