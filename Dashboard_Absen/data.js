@@ -12,18 +12,40 @@ const CONFIG = {
   JAM_PULANG_STANDAR: "15:30:00"
 };
 
-// Daftar Tab Sheet Log Riwayat Absensi yang ada di Spreadsheet (20 Juli s/d 9 September 2026)
+// Daftar Tab Sheet Log Riwayat Absensi yang ada di Spreadsheet (Diperbarui s/d September 2026)
 const KNOWN_LOG_SHEETS = [
-  'Log_09-09-2026', 'Log_08-09-2026', 'Log_07-09-2026', 'Log_05-09-2026',
-  'Log_04-09-2026', 'Log_03-09-2026', 'Log_27-08-2026', 'Log_24-08-2026',
-  'Log_22-08-2026', 'Log_21-08-2026', 'Log_20-08-2026', 'Log_19-08-2026',
-  'Log_18-08-2026', 'Log_17-08-2026', 'Log_15-08-2026', 'Log_14-08-2026',
-  'Log_13-08-2026', 'Log_10-08-2026', 'Log_08-08-2026', 'Log_07-08-2026',
-  'Log_06-08-2026', 'Log_05-08-2026', 'Log_04-08-2026', 'Log_03-08-2026',
-  'Log_01-08-2026', 'Log_31-07-2026', 'Log_30-07-2026', 'Log_29-07-2026',
-  'Log_28-07-2026', 'Log_27-07-2026', 'Log_25-07-2026', 'Log_24-07-2026',
-  'Log_23-07-2026', 'Log_20-07-2026'
+  'Log_19-09-2026', 'Log_18-09-2026', 'Log_17-09-2026', 'Log_16-09-2026',
+  'Log_15-09-2026', 'Log_14-09-2026', 'Log_13-09-2026', 'Log_12-09-2026',
+  'Log_11-09-2026', 'Log_10-09-2026', 'Log_09-09-2026', 'Log_08-09-2026',
+  'Log_07-09-2026', 'Log_05-09-2026', 'Log_04-09-2026', 'Log_03-09-2026',
+  'Log_27-08-2026', 'Log_24-08-2026', 'Log_22-08-2026', 'Log_21-08-2026',
+  'Log_20-08-2026', 'Log_19-08-2026', 'Log_18-08-2026', 'Log_17-08-2026',
+  'Log_15-08-2026', 'Log_14-08-2026', 'Log_13-08-2026', 'Log_10-08-2026',
+  'Log_08-08-2026', 'Log_07-08-2026', 'Log_06-08-2026', 'Log_05-08-2026',
+  'Log_04-08-2026', 'Log_03-08-2026', 'Log_01-08-2026', 'Log_31-07-2026',
+  'Log_30-07-2026', 'Log_29-07-2026', 'Log_28-07-2026', 'Log_27-07-2026',
+  'Log_25-07-2026', 'Log_24-07-2026', 'Log_23-07-2026', 'Log_20-07-2026'
 ];
+
+/**
+ * Mendapatkan daftar tab log absensi secara dinamis dan real-time.
+ * Menggabungkan tab riwayat yang diketahui + otomatis meng-generate nama tab hari ini,
+ * hari esok, dan 60 hari ke belakang agar absensi hari baru selalu langsung terdeteksi
+ * tanpa perlu update kode secara manual.
+ */
+function getActiveLogSheetsList() {
+  const sheetSet = new Set(KNOWN_LOG_SHEETS);
+  const now = new Date();
+  for (let offset = -1; offset <= 60; offset++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - offset);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    sheetSet.add(`Log_${dd}-${mm}-${yyyy}`);
+  }
+  return Array.from(sheetSet);
+}
 
 // Master Guru & Log Riwayat Aktif
 let masterGuru = [];
@@ -150,8 +172,8 @@ async function loadLiveGoogleSheetData() {
   isLiveLoading = true;
 
   try {
-    // 1. Tarik Data Master Guru dari sheet "Database Guru"
-    const dbUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Database%20Guru`;
+    // 1. Tarik Data Master Guru dari sheet "Database Guru" (dengan anti-cache)
+    const dbUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Database%20Guru&tq=select%20*&_=${Date.now()}`;
     const dbRes = await fetch(dbUrl);
     const dbText = await dbRes.text();
     const dbJson = parseGvizResponse(dbText);
@@ -208,13 +230,13 @@ async function loadLiveGoogleSheetData() {
       }
     }
 
-    // 2. Tarik Data Log Absensi dari Seluruh Sheet Log Riwayat (20 Juli s/d 9 September 2026)
-    const logsToFetch = KNOWN_LOG_SHEETS;
+    // 2. Tarik Data Log Absensi dari Seluruh Sheet Log Riwayat (Dinamis & Real-Time)
+    const logsToFetch = getActiveLogSheetsList();
     const allFetchedLogs = [];
 
     const fetchPromises = logsToFetch.map(async (sheetName) => {
       try {
-        const logUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+        const logUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&tq=select%20*&_=${Date.now()}`;
         const logRes = await fetch(logUrl);
         const logText = await logRes.text();
         const logJson = parseGvizResponse(logText);
@@ -454,7 +476,8 @@ function getTeacherStats(guruId) {
   const totalCheckInOnly = teacherLogs.filter(l => !l.waktuKeluar || l.waktuKeluar === '-').length;
 
   // Target hari kerja aktif yang terdata di sheet
-  const targetHariJadwal = Math.max(1, KNOWN_LOG_SHEETS.slice(0, 10).length);
+  const uniqueLoggedDates = Array.from(new Set(attendanceLogs.map(l => l.tanggal)));
+  const targetHariJadwal = Math.max(1, uniqueLoggedDates.slice(0, 10).length);
   const persentaseKehadiran = Math.min(100, Math.round((totalHadir / targetHariJadwal) * 100));
 
   const todayLog = teacherLogs.find(l => l.tanggal === todayStr);

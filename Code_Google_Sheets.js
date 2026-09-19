@@ -76,6 +76,21 @@ function doGet(e) {
   }
 
   // =========================================================================
+  // 1.B API UNTUK DASHBOARD WEB: MENGAMBIL DAFTAR SELURUH LOG SHEET (GET ALL LOG SHEETS)
+  // =========================================================================
+  if (action === "getAllLogSheets") {
+    var allSheets = ss.getSheets();
+    var logNames = [];
+    for (var s = 0; s < allSheets.length; s++) {
+      var sName = allSheets[s].getName();
+      if (sName.indexOf("Log_") === 0) {
+        logNames.push(sName);
+      }
+    }
+    return respondJson({ success: true, sheets: logNames });
+  }
+
+  // =========================================================================
   // 2. API UNTUK DASHBOARD WEB: TAMBAH GURU BARU (ADD TEACHER)
   // =========================================================================
   if (action === "addTeacher") {
