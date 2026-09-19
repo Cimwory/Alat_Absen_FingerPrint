@@ -1603,6 +1603,7 @@ function executeExportDownload(fileType = 'XLS') {
       const gLogs = filteredLogs.filter(l => String(l.guruId) === String(guru.id) || l.nama === guru.name);
       const totalHadir = gLogs.length;
       const totalCheckOut = gLogs.filter(l => l.waktuKeluar && l.waktuKeluar !== '-').length;
+      const totalCheckInOnly = Math.max(0, totalHadir - totalCheckOut);
       const uniqueDates = Array.from(new Set(attendanceLogs.map(l => l.tanggal)));
       const targetDays = Math.max(1, uniqueDates.slice(0, 10).length);
       const kehadiranPct = Math.min(100, Math.round((totalHadir / targetDays) * 100));
