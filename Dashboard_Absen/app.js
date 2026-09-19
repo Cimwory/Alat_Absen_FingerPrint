@@ -238,29 +238,11 @@ function renderOverview() {
   const todayStr = `${day}-${month}-${year}`;
   const todayLogs = attendanceLogs.filter(l => l.tanggal === todayStr);
 
-  // Hitung Tepat Waktu vs Terlambat (Batas 07:15 WIB)
-  let tepatWaktuCount = 0;
-  let terlambatCount = 0;
-  todayLogs.forEach(l => {
-    if (l.waktuMasuk && l.waktuMasuk !== '-') {
-      const parts = l.waktuMasuk.split(':').map(Number);
-      const h = parts[0];
-      const m = parts[1];
-      if (!isNaN(h) && !isNaN(m)) {
-        if (h < 7 || (h === 7 && m <= 15)) {
-          tepatWaktuCount++;
-        } else {
-          terlambatCount++;
-        }
-      } else {
-        tepatWaktuCount++;
-      }
-    }
-  });
+  // Hitung Check In (Masuk) dan Check Out (Pulang) riil dari data hari ini
+  const checkInCount = todayLogs.filter(l => l.waktuMasuk && l.waktuMasuk !== '-').length;
+  const checkOutCount = todayLogs.filter(l => l.status === 'TAP OUT' || (l.waktuKeluar && l.waktuKeluar !== '-')).length;
 
-  const belumHadirCount = Math.max(0, summary.totalGuru - summary.hadirHariIni);
-
-  // Update 5 Kartu KPI Modern (Referensi UI)
+  // Update 4 Kartu KPI Modern (Data Presensi Otentik)
   if (document.getElementById('statHadirHariIni')) {
     document.getElementById('statHadirHariIni').textContent = summary.hadirHariIni;
   }
@@ -270,14 +252,11 @@ function renderOverview() {
   if (document.getElementById('statPersenHadirToday')) {
     document.getElementById('statPersenHadirToday').innerHTML = `<i class="fa-solid fa-arrow-trend-up mr-1 text-emerald-600"></i> ${summary.persenHadirHariIni}% kehadiran`;
   }
-  if (document.getElementById('statTepatWaktu')) {
-    document.getElementById('statTepatWaktu').textContent = tepatWaktuCount;
+  if (document.getElementById('statCheckInCount')) {
+    document.getElementById('statCheckInCount').textContent = checkInCount;
   }
-  if (document.getElementById('statTerlambat')) {
-    document.getElementById('statTerlambat').textContent = terlambatCount;
-  }
-  if (document.getElementById('statIzinSakit')) {
-    document.getElementById('statIzinSakit').textContent = belumHadirCount;
+  if (document.getElementById('statCheckOutCount')) {
+    document.getElementById('statCheckOutCount').textContent = checkOutCount;
   }
   if (document.getElementById('statMesinOnline')) {
     document.getElementById('statMesinOnline').textContent = "2 / 2";

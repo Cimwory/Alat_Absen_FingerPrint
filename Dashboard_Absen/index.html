@@ -454,8 +454,8 @@
              ========================================== -->
         <section id="tab-overview" class="tab-view active">
 
-          <!-- 5-Metric KPI Row (Verbatim Layout from Referensi UI.txt) -->
-          <div class="overview-kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-stretch mb-6">
+          <!-- 4-Metric KPI Row: Data Riil Presensi Hari Ini (Tanpa asumsi terlambat/izin) -->
+          <div class="overview-kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch mb-6">
             <!-- Metric 1: Guru Hadir Hari Ini -->
             <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
               <div>
@@ -467,7 +467,7 @@
                 </div>
                 <div class="flex items-baseline gap-2 mb-1">
                   <h3 class="text-3xl font-extrabold text-on-surface tracking-tight" id="statHadirHariIni">0</h3>
-                  <span class="text-xs text-outline font-medium" id="statTotalGuruRatio">/ 24 Guru</span>
+                  <span class="text-xs text-outline font-medium" id="statTotalGuruRatio">/ 31 Guru</span>
                 </div>
               </div>
               <div class="mt-4 pt-3 border-t border-outline-variant/20">
@@ -477,68 +477,53 @@
               </div>
             </div>
 
-            <!-- Metric 2: Tepat Waktu -->
+            <!-- Metric 2: Check In (Masuk) -->
             <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
               <div>
                 <div class="flex items-center justify-between gap-2 mb-3">
-                  <span class="text-xs font-semibold text-on-surface-variant">Tepat Waktu</span>
-                  <span class="p-2 rounded-xl bg-secondary-fixed/50 text-on-secondary-fixed">
-                    <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                  <span class="text-xs font-semibold text-on-surface-variant">Check In (Masuk)</span>
+                  <span class="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+                    <span class="material-symbols-outlined text-[20px]">login</span>
                   </span>
                 </div>
                 <div class="flex items-baseline gap-2 mb-1">
-                  <h3 class="text-3xl font-extrabold text-on-surface tracking-tight" id="statTepatWaktu">0</h3>
+                  <h3 class="text-3xl font-extrabold text-on-surface tracking-tight" id="statCheckInCount">0</h3>
                   <span class="text-xs text-outline font-medium">Guru</span>
                 </div>
               </div>
               <div class="mt-4 pt-3 border-t border-outline-variant/20">
-                <span class="text-[11px] text-outline">Tap-in sebelum 07:15 WIB</span>
+                <span class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span> Presensi Masuk Hari Ini
+                </span>
               </div>
             </div>
 
-            <!-- Metric 3: Terlambat -->
+            <!-- Metric 3: Check Out (Pulang) -->
             <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
               <div>
                 <div class="flex items-center justify-between gap-2 mb-3">
-                  <span class="text-xs font-semibold text-on-surface-variant">Terlambat</span>
-                  <span class="p-2 rounded-xl bg-amber-50 text-amber-700">
-                    <span class="material-symbols-outlined text-[20px]">schedule</span>
+                  <span class="text-xs font-semibold text-on-surface-variant">Check Out (Pulang)</span>
+                  <span class="p-2 rounded-xl bg-blue-50 text-blue-700">
+                    <span class="material-symbols-outlined text-[20px]">logout</span>
                   </span>
                 </div>
                 <div class="flex items-baseline gap-2 mb-1">
-                  <h3 class="text-3xl font-extrabold text-on-surface tracking-tight" id="statTerlambat">0</h3>
+                  <h3 class="text-3xl font-extrabold text-on-surface tracking-tight" id="statCheckOutCount">0</h3>
                   <span class="text-xs text-outline font-medium">Guru</span>
                 </div>
               </div>
               <div class="mt-4 pt-3 border-t border-outline-variant/20">
-                <span class="text-[11px] text-amber-700 font-medium">Maks. toleransi dispensasi 15m</span>
+                <span class="text-[11px] text-blue-700 font-semibold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">done_all</span> Selesai Bertugas / Pulang
+                </span>
               </div>
             </div>
 
-            <!-- Metric 4: Izin / Sakit / Bebas -->
+            <!-- Metric 4: Status Alat Absen -->
             <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
               <div>
                 <div class="flex items-center justify-between gap-2 mb-3">
-                  <span class="text-xs font-semibold text-on-surface-variant">Izin / Sakit / Bebas</span>
-                  <span class="p-2 rounded-xl bg-indigo-50 text-indigo-700">
-                    <span class="material-symbols-outlined text-[20px]">event_busy</span>
-                  </span>
-                </div>
-                <div class="flex items-baseline gap-2 mb-1">
-                  <h3 class="text-3xl font-extrabold text-on-surface tracking-tight" id="statIzinSakit">0</h3>
-                  <span class="text-xs text-outline font-medium">Guru</span>
-                </div>
-              </div>
-              <div class="mt-4 pt-3 border-t border-outline-variant/20">
-                <span class="text-[11px] text-outline">Dispensasi resmi & surat izin</span>
-              </div>
-            </div>
-
-            <!-- Metric 5: Alat Absen -->
-            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between h-full">
-              <div>
-                <div class="flex items-center justify-between gap-2 mb-3">
-                  <span class="text-xs font-semibold text-on-surface-variant">Alat Absen</span>
+                  <span class="text-xs font-semibold text-on-surface-variant">Status Alat Absen</span>
                   <span class="p-2 rounded-xl bg-secondary-fixed text-on-secondary-fixed">
                     <span class="material-symbols-outlined text-[20px]">sensors</span>
                   </span>
@@ -549,7 +534,7 @@
                 </div>
               </div>
               <div class="mt-4 pt-3 border-t border-outline-variant/20">
-                <span class="text-[11px] text-outline">Alat Absen A & B Aktif</span>
+                <span class="text-[11px] text-outline">Alat Absen A & B Aktif Real-Time</span>
               </div>
             </div>
           </div>
