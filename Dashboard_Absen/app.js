@@ -656,6 +656,9 @@ function renderLogsTable(filteredLogs = null) {
   const tbody = document.getElementById('allLogsTbody');
   if (!tbody) return;
 
+  const currentUser = getCurrentUser();
+  const noticeBanner = document.getElementById('logRoleNoticeBanner');
+
   // Jika tidak disediakan data terfilter secara eksplisit, periksa filter aktif
   if (filteredLogs === null) {
     const query = document.getElementById('logSearchInput') ? document.getElementById('logSearchInput').value.trim() : '';
@@ -669,9 +672,6 @@ function renderLogsTable(filteredLogs = null) {
     }
   }
 
-  tbody.innerHTML = '';
-
-  const currentUser = getCurrentUser();
   let baseLogs = attendanceLogs;
   if (currentUser && (currentUser.role === 'GURU' || currentUser.role === 'PENGELOLA')) {
     baseLogs = attendanceLogs.filter(l => 
@@ -681,6 +681,38 @@ function renderLogsTable(filteredLogs = null) {
   }
 
   const logs = filteredLogs !== null ? filteredLogs : baseLogs;
+
+  // Render Banner Informasi Akses Riwayat
+  if (noticeBanner) {
+    if (currentUser && (currentUser.role === 'GURU' || currentUser.role === 'PENGELOLA')) {
+      noticeBanner.style.display = 'flex';
+      noticeBanner.className = 'mb-3.5 px-4 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2.5 bg-emerald-50 text-emerald-900 border border-emerald-200/80 shadow-xs';
+      noticeBanner.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] text-emerald-700">lock_open</span>
+        <div style="line-height: 1.4;">
+          <strong>Mode Rekap Presensi Mandiri:</strong> Menampilkan riwayat kehadiran milik <strong>${currentUser.name}</strong> (${logs.length} catatan). Untuk melihat seluruh guru, masuk sebagai Administrator.
+        </div>
+      `;
+    } else {
+      noticeBanner.style.display = 'flex';
+      noticeBanner.className = 'mb-3.5 px-4 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2.5 bg-slate-50 text-slate-800 border border-slate-200/80 shadow-xs';
+      noticeBanner.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] text-slate-600">admin_panel_settings</span>
+        <div style="line-height: 1.4;">
+          <strong>Akses Administrator:</strong> Menampilkan seluruh riwayat presensi dewan guru & staf (${logs.length} catatan terdata).
+        </div>
+      `;
+    }
+  }
+
+  // Anti-Flicker: Jika data log yang dirender sama persis dengan yang ada di DOM, jangan reset innerHTML agar posisi scroll pengguna tidak terganggu
+  const newSignature = logs.map(l => `${l.id || l.tanggal}_${l.guruId}_${l.waktuMasuk}_${l.waktuKeluar}_${l.status}`).join('|');
+  if (tbody.dataset.signature === newSignature) {
+    return;
+  }
+  tbody.dataset.signature = newSignature;
+
+  tbody.innerHTML = '';
 
   if (logs.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">Tidak ada riwayat absensi yang cocok dengan filter.</td></tr>`;
@@ -727,12 +759,21 @@ function populateDateFilterOptions() {
   if (!select) return;
 
   const currentVal = select.value || 'ALL';
+  const currentUser = getCurrentUser();
 
-  // Kumpulkan semua tanggal unik dari attendanceLogs
+  let baseLogs = attendanceLogs;
+  if (currentUser && (currentUser.role === 'GURU' || currentUser.role === 'PENGELOLA')) {
+    baseLogs = attendanceLogs.filter(l => 
+      String(l.guruId) === String(currentUser.teacherId) || 
+      (l.nama && currentUser.name && l.nama.toLowerCase().includes(currentUser.name.toLowerCase()))
+    );
+  }
+
+  // Kumpulkan semua tanggal unik dari baseLogs yang relevan dengan akun aktif
   const uniqueDates = [];
   const seenDates = new Set();
 
-  attendanceLogs.forEach(log => {
+  baseLogs.forEach(log => {
     if (log.tanggal && !seenDates.has(log.tanggal)) {
       seenDates.add(log.tanggal);
       uniqueDates.push({
@@ -754,7 +795,11 @@ function populateDateFilterOptions() {
     return parse(b.tanggal) - parse(a.tanggal);
   });
 
-  let optionsHtml = `<option value="ALL">Semua Tanggal (${attendanceLogs.length} Log)</option>`;
+  const labelAll = currentUser && (currentUser.role === 'GURU' || currentUser.role === 'PENGELOLA')
+    ? `Semua Tanggal Pribadi (${baseLogs.length} Log)`
+    : `Semua Tanggal (${attendanceLogs.length} Log)`;
+
+  let optionsHtml = `<option value="ALL">${labelAll}</option>`;
   
   if (uniqueDates.length > 0) {
     optionsHtml += `<optgroup label="Pilih Tanggal Riwayat:">`;
