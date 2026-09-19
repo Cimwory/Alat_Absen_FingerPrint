@@ -331,40 +331,60 @@ function renderOverview() {
     }
   }
 
-  // Render Live Activity Feed
+  // Render Live Activity Feed (Hanya Guru yang Hadir Hari Ini & Menampilkan Jam Tap In + Tap Out)
   const feedContainer = document.getElementById('activityFeedList');
   if (feedContainer) {
     feedContainer.innerHTML = '';
-    const recentLogs = attendanceLogs.slice(0, 7);
 
-    recentLogs.forEach(log => {
-      const guru = masterGuru.find(g => g.id === log.guruId) || {};
-      const item = document.createElement('div');
-      item.className = 'feed-item';
-
-      const isOut = log.status === 'TAP OUT';
-      const badgeClass = isOut ? 'badge-out' : 'badge-in';
-      const badgeText = isOut ? 'PULANG' : 'MASUK';
-      const badgeIcon = isOut ? 'fa-arrow-left' : 'fa-arrow-right-to-bracket';
-      const activeTime = isOut ? log.waktuKeluar : log.waktuMasuk;
-
-      item.innerHTML = `
-        <img src="${guru.photo || 'https://via.placeholder.com/40'}" class="feed-avatar" alt="${log.nama}">
-        <div class="feed-details">
-          <div class="feed-name">${log.nama}</div>
-          <div class="feed-sub">
-            <span style="color: #006c49; font-weight: 700;">Kode: ${log.guruId}</span>
-            <span>&bull;</span>
-            <span>${log.tipe === 'RFID' ? 'Kartu RFID' : 'Sidik Jari'}</span>
-          </div>
-        </div>
-        <div class="feed-badge-group">
-          <span class="badge ${badgeClass}"><i class="fa-solid ${badgeIcon}"></i> ${badgeText}</span>
-          <div class="time-pill" style="margin-top: 4px;">${activeTime}</div>
+    if (todayLogs.length === 0) {
+      feedContainer.innerHTML = `
+        <div style="text-align: center; padding: 28px 16px; color: var(--text-muted); background: #f8fafc; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+          <span class="material-symbols-outlined" style="font-size: 32px; color: #94a3b8; display: block; margin-bottom: 6px;">event_busy</span>
+          <strong style="display: block; color: var(--text-main); font-size: 13px;">Belum Ada Presensi Hari Ini</strong>
+          <span style="font-size: 11.5px; color: var(--text-muted);">Belum ada guru yang melakukan absensi pada hari ini (${summary.todayName}, ${summary.todayStr}).</span>
         </div>
       `;
-      feedContainer.appendChild(item);
-    });
+    } else {
+      todayLogs.forEach(log => {
+        const guru = masterGuru.find(g => String(g.id) === String(log.guruId) || g.name.toLowerCase() === log.nama.toLowerCase()) || {};
+        const item = document.createElement('div');
+        item.className = 'feed-item';
+
+        const isOut = log.status === 'TAP OUT' || (log.waktuKeluar && log.waktuKeluar !== '-');
+        const inTime = log.waktuMasuk && log.waktuMasuk !== '-' ? log.waktuMasuk : '-';
+        const outTime = log.waktuKeluar && log.waktuKeluar !== '-' ? log.waktuKeluar : '-';
+
+        item.innerHTML = `
+          <img src="${guru.photo || 'https://via.placeholder.com/40'}" class="feed-avatar" alt="${log.nama}">
+          <div class="feed-details">
+            <div class="feed-name">${log.nama}</div>
+            <div class="feed-sub">
+              <span style="color: #006c49; font-weight: 700;">Kode: ${log.guruId}</span>
+              <span>&bull;</span>
+              <span style="color: var(--text-muted);">${log.jabatan || guru.role || 'Guru Mapel'}</span>
+              <span>&bull;</span>
+              <span>${log.tipe === 'RFID' ? 'Kartu RFID' : 'Sidik Jari'}</span>
+            </div>
+          </div>
+          <div class="feed-badge-group" style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+              <span class="badge badge-in" style="font-size: 11px; padding: 3px 9px; font-weight: 700; white-space: nowrap;">
+                <i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Masuk: ${inTime}
+              </span>
+              ${isOut && outTime !== '-' 
+                ? `<span class="badge badge-out" style="font-size: 11px; padding: 3px 9px; font-weight: 700; white-space: nowrap;">
+                     <i class="fa-solid fa-check-double mr-1"></i> Pulang: ${outTime}
+                   </span>`
+                : `<span class="badge" style="background: rgba(0, 108, 73, 0.08); color: #006c49; border: 1px solid rgba(0, 108, 73, 0.25); font-size: 11px; padding: 3px 9px; font-weight: 600; white-space: nowrap;">
+                     <i class="fa-solid fa-building-user mr-1"></i> Di Sekolah
+                   </span>`
+              }
+            </div>
+          </div>
+        `;
+        feedContainer.appendChild(item);
+      });
+    }
   }
 }
 

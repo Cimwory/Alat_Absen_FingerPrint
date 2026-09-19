@@ -68,13 +68,18 @@ function parseDateTs(dStr) {
   return 0;
 }
 
-// Parse GViz JSON Response
+// Parse GViz JSON Response (Aman dari respons error non-JSON)
 function parseGvizResponse(rawText) {
-  const startIdx = rawText.indexOf('{');
-  const endIdx = rawText.lastIndexOf('}');
-  if (startIdx === -1 || endIdx === -1) return null;
-  const jsonStr = rawText.substring(startIdx, endIdx + 1);
-  return JSON.parse(jsonStr);
+  try {
+    if (!rawText) return null;
+    const startIdx = rawText.indexOf('{');
+    const endIdx = rawText.lastIndexOf('}');
+    if (startIdx === -1 || endIdx === -1) return null;
+    const jsonStr = rawText.substring(startIdx, endIdx + 1);
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
@@ -243,6 +248,16 @@ async function loadLiveGoogleSheetData() {
 
         if (!logJson || !logJson.table || !logJson.table.rows) return;
 
+        // PENTING: Validasi bahwa sheet ini adalah sheet Log Presensi asli, bukan fallback ke "Database Guru"
+        // Jika nama tab tidak ada di spreadsheet, Google Sheets GViz otomatis mengembalikan sheet pertama ("Database Guru").
+        const colLabels = logJson.table.cols.map(c => (c?.label || '').toLowerCase().trim());
+        const isDatabaseGuruFallback = colLabels.some(l => l.includes('(kartu/jari)')) || 
+                                       (colLabels.includes('nama guru') && !colLabels.some(l => l.includes('tanggal') || l.includes('masuk') || l.includes('waktu')));
+        if (isDatabaseGuruFallback) {
+          // Tab log ini tidak ada di spreadsheet, jangan diproses agar tidak merusak data
+          return;
+        }
+
         // Ambil nama sheet untuk tanggal cadangan (misal: Log_09-09-2026 -> 09-09-2026)
         const tglFallback = sheetName.replace("Log_", "");
 
@@ -266,6 +281,9 @@ async function loadLiveGoogleSheetData() {
           else if (lbl.includes('waktu') && colMasuk === -1) colWaktu = idx;
         });
 
+        const hasLogCols = colTanggal >= 0 || colMasuk >= 0 || colWaktu >= 0 || colTipeAbsen >= 0;
+        if (!hasLogCols) return;
+
         const isOlderFormat = !hasWaktuMasukCol;
 
         if (isOlderFormat) {
@@ -280,7 +298,8 @@ async function loadLiveGoogleSheetData() {
               return r.c[idx].f || (r.c[idx].v !== null && r.c[idx].v !== undefined ? String(r.c[idx].v) : "");
             };
 
-            let tgl = getVal(colTanggal >= 0 ? colTanggal : 0) || tglFallback;
+            let tglRaw = getVal(colTanggal >= 0 ? colTanggal : 0);
+            let tgl = (tglRaw && (tglRaw.includes('-') || tglRaw.includes('/')) && tglRaw.length >= 8) ? tglRaw : tglFallback;
             let waktu = formatGvizDateString(getVal(colWaktu >= 0 ? colWaktu : 1));
             let tipeAbsen = (getVal(colTipeAbsen >= 0 ? colTipeAbsen : 2) || "").toUpperCase().trim();
             let nama = getVal(colNama >= 0 ? colNama : 3).trim();
@@ -290,6 +309,7 @@ async function loadLiveGoogleSheetData() {
 
             // Lewati baris header atau kosong
             if (!nama || nama.toLowerCase().includes("nama") || nama === "MASUK" || nama === "PULANG") return;
+            if (waktu === "FINGER" || waktu === "RFID") return;
             if (!tipeAbsen) {
               tipeAbsen = waktu ? "MASUK" : "";
             }
@@ -335,6 +355,10 @@ async function loadLiveGoogleSheetData() {
 
           // Masukkan hasil konsolidasi format lama ke allFetchedLogs
           for (const item of dayTeacherMap.values()) {
+            if (!item.tanggal || (!item.tanggal.includes('-') && !item.tanggal.includes('/')) || item.tanggal.length < 8) continue;
+            if (item.waktuMasuk === 'FINGER' || item.waktuMasuk === 'RFID') continue;
+            if (item.waktuMasuk === '-' && item.waktuKeluar === '-') continue;
+
             const guruObj = masterGuru.find(g => String(g.id) === String(item.id) || g.name.toLowerCase() === item.nama.toLowerCase());
             const status = item.waktuKeluar !== "-" ? "TAP OUT" : "TAP IN";
 
@@ -362,7 +386,8 @@ async function loadLiveGoogleSheetData() {
               return r.c[idx].f || (r.c[idx].v !== null && r.c[idx].v !== undefined ? String(r.c[idx].v) : "");
             };
 
-            let tgl = getVal(colTanggal >= 0 ? colTanggal : 0) || tglFallback;
+            let tglRaw = getVal(colTanggal >= 0 ? colTanggal : 0);
+            let tgl = (tglRaw && (tglRaw.includes('-') || tglRaw.includes('/')) && tglRaw.length >= 8) ? tglRaw : tglFallback;
             let idVal = getVal(colId >= 0 ? colId : 1);
             let nama = getVal(colNama >= 0 ? colNama : 2).trim();
             let jabatan = getVal(colJabatan >= 0 ? colJabatan : 3).trim();
@@ -372,6 +397,9 @@ async function loadLiveGoogleSheetData() {
             let status = getVal(colStatus >= 0 ? colStatus : 7);
 
             if (!nama || nama.toLowerCase().includes("nama")) return;
+            if (!tgl || (!tgl.includes('-') && !tgl.includes('/')) || tgl.length < 8) return;
+            if (masuk === 'FINGER' || masuk === 'RFID') return;
+            if (masuk === '-' && keluar === '-') return;
 
             // Jika ID kosong tapi nama ada, cocokkan dengan Database Guru
             if (!idVal && nama) {
