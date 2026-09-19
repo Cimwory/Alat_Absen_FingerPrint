@@ -621,17 +621,26 @@ body {
 .feed-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 11px 14px;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   transition: var(--transition);
 }
 
 .feed-item:hover {
-  background: #f1f3ff;
-  border-color: var(--primary-light);
+  background: #f8fafc;
+  border-color: #006c49;
+}
+
+.feed-main-info {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  flex: 1;
 }
 
 .feed-avatar {
@@ -655,26 +664,51 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .feed-sub {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-wrap: wrap;
   margin-top: 2px;
 }
 
+.feed-id-tag {
+  color: #006c49;
+  font-weight: 700;
+}
+
 .feed-badge-group {
-  text-align: right;
   flex-shrink: 0;
 }
 
-.time-pill {
-  font-size: 11.5px;
+.feed-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.feed-badges-row .badge {
+  font-size: 11px;
+  padding: 3px 9px;
   font-weight: 700;
-  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.badge-school {
+  background: rgba(0, 108, 73, 0.08);
+  color: #006c49;
+  border: 1px solid rgba(0, 108, 73, 0.25);
+  font-size: 11px;
+  padding: 3px 9px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -2117,44 +2151,89 @@ body {
     gap: 8px;
   }
 
+  .feed-list .feed-item,
   .feed-item {
-    padding: 8px 10px;
-    gap: 8px;
-    min-width: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
   }
 
+  .feed-list .feed-main-info,
+  .feed-main-info {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-width: 0 !important;
+  }
+
+  .feed-list .feed-avatar,
   .feed-avatar {
-    width: 32px;
-    height: 32px;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
   }
 
+  .feed-list .feed-details,
   .feed-details {
-    min-width: 0;
-    flex: 1;
+    min-width: 0 !important;
+    flex: 1 !important;
   }
 
+  .feed-list .feed-name,
   .feed-name {
-    font-size: 12px;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.35 !important;
+    word-break: break-word !important;
   }
 
+  .feed-list .feed-sub,
   .feed-sub {
-    font-size: 10px;
-    gap: 4px;
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+    gap: 5px !important;
+    flex-wrap: wrap !important;
+    margin-top: 3px !important;
   }
 
+  .feed-list .feed-badge-group,
   .feed-badge-group {
-    flex-shrink: 0;
-    text-align: right;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    padding-top: 8px !important;
+    border-top: 1px dashed rgba(190, 201, 194, 0.45) !important;
+    flex-shrink: 0 !important;
+    text-align: left !important;
   }
 
-  .feed-badge-group .badge {
-    font-size: 9.5px;
-    padding: 2px 6px;
+  .feed-list .feed-badges-row,
+  .feed-badges-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
   }
 
-  .feed-badge-group .time-pill {
-    font-size: 10px;
-    margin-top: 2px;
+  .feed-list .feed-badges-row .badge,
+  .feed-badges-row .badge {
+    font-size: 11px !important;
+    padding: 4px 9px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
   }
 
   /* 8. TOOLBAR & FILTERS */

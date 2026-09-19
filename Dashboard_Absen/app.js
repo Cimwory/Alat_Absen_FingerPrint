@@ -334,27 +334,29 @@ function renderOverview() {
         const outTime = log.waktuKeluar && log.waktuKeluar !== '-' ? log.waktuKeluar : '-';
 
         item.innerHTML = `
-          <img src="${guru.photo || 'https://via.placeholder.com/40'}" class="feed-avatar" alt="${log.nama}">
-          <div class="feed-details">
-            <div class="feed-name">${log.nama}</div>
-            <div class="feed-sub">
-              <span style="color: #006c49; font-weight: 700;">Kode: ${log.guruId}</span>
-              <span>&bull;</span>
-              <span style="color: var(--text-muted);">${log.jabatan || guru.role || 'Guru Mapel'}</span>
-              <span>&bull;</span>
-              <span>${log.tipe === 'RFID' ? 'Kartu RFID' : 'Sidik Jari'}</span>
+          <div class="feed-main-info">
+            <img src="${guru.photo || 'https://via.placeholder.com/40'}" class="feed-avatar" alt="${log.nama}">
+            <div class="feed-details">
+              <div class="feed-name">${log.nama}</div>
+              <div class="feed-sub">
+                <span class="feed-id-tag">Kode: ${log.guruId}</span>
+                <span>&bull;</span>
+                <span class="feed-role">${log.jabatan || guru.role || 'Guru Mapel'}</span>
+                <span>&bull;</span>
+                <span class="feed-sensor">${log.tipe === 'RFID' ? 'Kartu RFID' : 'Sidik Jari'}</span>
+              </div>
             </div>
           </div>
-          <div class="feed-badge-group" style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0;">
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-              <span class="badge badge-in" style="font-size: 11px; padding: 3px 9px; font-weight: 700; white-space: nowrap;">
+          <div class="feed-badge-group">
+            <div class="feed-badges-row">
+              <span class="badge badge-in">
                 <i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Masuk: ${inTime}
               </span>
               ${isOut && outTime !== '-' 
-                ? `<span class="badge badge-out" style="font-size: 11px; padding: 3px 9px; font-weight: 700; white-space: nowrap;">
+                ? `<span class="badge badge-out">
                      <i class="fa-solid fa-check-double mr-1"></i> Pulang: ${outTime}
                    </span>`
-                : `<span class="badge" style="background: rgba(0, 108, 73, 0.08); color: #006c49; border: 1px solid rgba(0, 108, 73, 0.25); font-size: 11px; padding: 3px 9px; font-weight: 600; white-space: nowrap;">
+                : `<span class="badge badge-school">
                      <i class="fa-solid fa-building-user mr-1"></i> Di Sekolah
                    </span>`
               }
