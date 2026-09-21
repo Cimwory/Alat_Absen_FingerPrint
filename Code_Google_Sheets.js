@@ -543,3 +543,81 @@ function konversiSemuaLogKeFormatBaru() {
   Logger.log(msg);
   SpreadsheetApp.getActiveSpreadsheet().toast(msg, "Konversi Berhasil", 8);
 }
+
+// =========================================================================
+// 11. FUNGSI HAPUS FITUR SMART TABLE (UBAH KE TABEL BASIC BIASA TANPA CHIP)
+// =========================================================================
+/**
+ * Jalankan fungsi ini untuk mengubah tab yang terkena fitur Google "Table"
+ * (yang ada tulisan Column 1, Column 2, Table11, dan dropdown chip/segitiga merah)
+ * menjadi TABEL BASIC BIASA (clean grid) seperti di tab Log_14-08-2026.
+ */
+function bersihkanTabelKeTabelBiasa() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  var fixedCount = 0;
+
+  for (var i = 0; i < sheets.length; i++) {
+    var sheet = sheets[i];
+    var sheetName = sheet.getName();
+
+    if (sheetName.indexOf("Log_") !== 0) continue;
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 1) continue;
+
+    var headerRow = sheet.getRange(1, 1, 1, Math.min(lastCol, 15)).getDisplayValues()[0];
+    var isSmartTable = headerRow.some(function(h) { 
+      return String(h).trim().indexOf("Column ") === 0; 
+    });
+
+    if (!isSmartTable) continue;
+
+    var cleanRows = [];
+    if (lastRow >= 2) {
+      var rawData = sheet.getRange(2, 1, lastRow - 1, 8).getDisplayValues();
+      for (var r = 0; r < rawData.length; r++) {
+        var row = rawData[r];
+        if (row[0] || row[1] || row[2]) {
+          cleanRows.push([
+            row[0] || "",
+            row[1] || "",
+            row[2] || "",
+            row[3] || "",
+            row[4] || "FINGER",
+            row[5] || "-",
+            row[6] || "-",
+            row[7] || "TAP IN"
+          ]);
+        }
+      }
+    }
+
+    // Buat sheet baru murni tanpa objek "Table"
+    var tempSheet = ss.insertSheet(sheetName + "_newBasic");
+    tempSheet.appendRow(["Tanggal", "ID", "Nama Guru", "Jabatan", "Tipe", "Waktu Masuk", "Waktu Keluar", "Status"]);
+
+    var headerRange = tempSheet.getRange(1, 1, 1, 8);
+    headerRange.setFontWeight("bold").setBackground("#d1fae5").setFontColor("#004532");
+
+    if (cleanRows.length > 0) {
+      tempSheet.getRange(2, 1, cleanRows.length, 8).setValues(cleanRows);
+    }
+
+    for (var c = 1; c <= 8; c++) {
+      tempSheet.autoResizeColumn(c);
+    }
+
+    // Hapus sheet lama yang terkontaminasi fitur Table11 / dropdown chip
+    ss.deleteSheet(sheet);
+    tempSheet.setName(sheetName);
+
+    Logger.log("Berhasil mengubah ke tabel basic biasa: " + sheetName);
+    fixedCount++;
+  }
+
+  var msg = "Selesai! " + fixedCount + " tab berhasil diubah menjadi Tabel Basic Biasa.";
+  Logger.log(msg);
+  SpreadsheetApp.getActiveSpreadsheet().toast(msg, "Tabel Biasa Sukses", 10);
+}
