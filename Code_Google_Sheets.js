@@ -386,8 +386,8 @@ function konversiSemuaLogKeFormatBaru() {
     var lastCol = sheet.getLastColumn();
     if (lastRow < 1 || lastCol < 2) continue;
 
-    // Ambil daftar header
-    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+    // Ambil daftar header (baris 1)
+    var headers = sheet.getRange(1, 1, 1, Math.min(lastCol, 15)).getDisplayValues()[0].map(function(h) {
       return String(h).toLowerCase().trim();
     });
 
@@ -398,6 +398,17 @@ function konversiSemuaLogKeFormatBaru() {
     if (hasWaktuMasuk && hasWaktuKeluar) {
       Logger.log("Dilewati (sudah format baru): " + sheetName);
       skippedCount++;
+      continue;
+    }
+
+    // Jika tab hanya ada baris header tanpa data
+    if (lastRow <= 1) {
+      sheet.clear();
+      sheet.appendRow(["Tanggal", "ID", "Nama Guru", "Jabatan", "Tipe", "Waktu Masuk", "Waktu Keluar", "Status"]);
+      var hrEmpty = sheet.getRange(1, 1, 1, 8);
+      hrEmpty.setFontWeight("bold").setBackground("#d1fae5").setFontColor("#004532");
+      for (var c = 1; c <= 8; c++) sheet.autoResizeColumn(c);
+      convertedCount++;
       continue;
     }
 
@@ -427,7 +438,8 @@ function konversiSemuaLogKeFormatBaru() {
     if (colMetode === -1) colMetode = 7;
     if (colId === -1) colId = 8;
 
-    var allData = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    // Gunakan getDisplayValues() agar nilai jam dan tanggal tetap berupa string persis tanpa pergeseran zona waktu
+    var allData = sheet.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
     var teacherMap = {};
     var orderKeys = [];
 
