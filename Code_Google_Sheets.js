@@ -360,3 +360,174 @@ function doGet(e) {
 
   return ContentService.createTextOutput("ERR|AKSI DITOLAK|Tdk Diketahui");
 }
+
+// =========================================================================
+// 10. FUNGSI OTOMATIS: RAPIKAN LOG FORMAT LAMA (24 AGUSTUS KE BELAKANG)
+// =========================================================================
+/**
+ * Jalankan fungsi ini sekali saja di Google Apps Script untuk otomatis 
+ * mengonversi seluruh tab log lama menjadi format modern:
+ * [Tanggal, ID, Nama Guru, Jabatan, Tipe, Waktu Masuk, Waktu Keluar, Status]
+ */
+function konversiSemuaLogKeFormatBaru() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  var convertedCount = 0;
+  var skippedCount = 0;
+
+  for (var i = 0; i < sheets.length; i++) {
+    var sheet = sheets[i];
+    var sheetName = sheet.getName();
+
+    // Hanya periksa tab dengan awalan "Log_"
+    if (sheetName.indexOf("Log_") !== 0) continue;
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 1 || lastCol < 2) continue;
+
+    // Ambil daftar header
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+      return String(h).toLowerCase().trim();
+    });
+
+    // Cek apakah sudah memakai format baru (punya kolom waktu masuk & keluar)
+    var hasWaktuMasuk = headers.some(function(h) { return h.indexOf("masuk") !== -1 && h.indexOf("tipe") === -1; });
+    var hasWaktuKeluar = headers.some(function(h) { return h.indexOf("keluar") !== -1; });
+
+    if (hasWaktuMasuk && hasWaktuKeluar) {
+      Logger.log("Dilewati (sudah format baru): " + sheetName);
+      skippedCount++;
+      continue;
+    }
+
+    // Pemetaan indeks kolom format lama
+    var colTanggal = -1, colWaktu = -1, colTipeAbsen = -1, colNama = -1;
+    var colJabatan = -1, colStatus = -1, colMetode = -1, colId = -1;
+
+    for (var c = 0; c < headers.length; c++) {
+      var h = headers[c];
+      if (h.indexOf("tanggal") !== -1) colTanggal = c;
+      else if (h.indexOf("waktu") !== -1 || h.indexOf("jam") !== -1) colWaktu = c;
+      else if (h.indexOf("tipe absen") !== -1) colTipeAbsen = c;
+      else if (h.indexOf("nama") !== -1) colNama = c;
+      else if (h.indexOf("jabatan") !== -1) colJabatan = c;
+      else if (h.indexOf("status") !== -1) colStatus = c;
+      else if (h.indexOf("metode") !== -1 || (h.indexOf("tipe") !== -1 && h.indexOf("absen") === -1)) colMetode = c;
+      else if (h === "id" || h === "# id" || h.indexOf("(kartu/jari)") !== -1) colId = c;
+    }
+
+    // Fallback indeks default bila header tidak terdeteksi
+    if (colTanggal === -1) colTanggal = 0;
+    if (colWaktu === -1) colWaktu = 1;
+    if (colTipeAbsen === -1) colTipeAbsen = 2;
+    if (colNama === -1) colNama = 3;
+    if (colJabatan === -1) colJabatan = 4;
+    if (colStatus === -1) colStatus = 5;
+    if (colMetode === -1) colMetode = 7;
+    if (colId === -1) colId = 8;
+
+    var allData = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    var teacherMap = {};
+    var orderKeys = [];
+
+    for (var r = 0; r < allData.length; r++) {
+      var row = allData[r];
+      var tgl = String(row[colTanggal] || "").trim();
+      var waktu = String(row[colWaktu] || "").trim();
+      var tipeAbsen = String(row[colTipeAbsen] || "").toUpperCase().trim();
+      var nama = String(row[colNama] || "").trim();
+      var jabatan = String(row[colJabatan] || "").trim();
+      var metode = String(row[colMetode] || "FINGER").trim();
+      var id = String(row[colId] || "").trim();
+
+      // Abaikan baris kosong atau baris judul berulang
+      if (!nama && !id) continue;
+      if (nama.toLowerCase().indexOf("nama guru") !== -1) continue;
+
+      if (!tgl) {
+        tgl = sheetName.replace("Log_", "");
+      }
+
+      var key = id ? String(id).toUpperCase() : nama.toLowerCase();
+
+      if (!teacherMap[key]) {
+        teacherMap[key] = {
+          tanggal: tgl,
+          id: id,
+          nama: nama,
+          jabatan: jabatan,
+          tipe: metode || "FINGER",
+          waktuMasuk: "-",
+          waktuKeluar: "-",
+          status: "DI SEKOLAH"
+        };
+        orderKeys.push(key);
+      }
+
+      var item = teacherMap[key];
+      if (jabatan && !item.jabatan) item.jabatan = jabatan;
+      if (id && !item.id) item.id = id;
+      if (nama && !item.nama) item.nama = nama;
+
+      if (tipeAbsen === "MASUK") {
+        item.waktuMasuk = waktu;
+      } else if (tipeAbsen === "PULANG" || tipeAbsen === "KELUAR") {
+        item.waktuKeluar = waktu;
+      } else {
+        if (item.waktuMasuk === "-") {
+          item.waktuMasuk = waktu;
+        } else if (item.waktuKeluar === "-") {
+          item.waktuKeluar = waktu;
+        }
+      }
+
+      if (item.waktuKeluar !== "-") {
+        item.status = "TAP OUT";
+      } else if (item.waktuMasuk !== "-") {
+        item.status = "TAP IN";
+      }
+    }
+
+    // Bangun baris data baru format terpadu
+    var newRows = [];
+    for (var k = 0; k < orderKeys.length; k++) {
+      var entry = teacherMap[orderKeys[k]];
+      newRows.push([
+        entry.tanggal,
+        entry.id,
+        entry.nama,
+        entry.jabatan,
+        entry.tipe,
+        entry.waktuMasuk,
+        entry.waktuKeluar,
+        entry.status
+      ]);
+    }
+
+    // Format ulang sheet
+    sheet.clear();
+    var newHeader = ["Tanggal", "ID", "Nama Guru", "Jabatan", "Tipe", "Waktu Masuk", "Waktu Keluar", "Status"];
+    sheet.appendRow(newHeader);
+
+    // Styling Header
+    var headerRange = sheet.getRange(1, 1, 1, 8);
+    headerRange.setFontWeight("bold");
+    headerRange.setBackground("#d1fae5");
+    headerRange.setFontColor("#004532");
+
+    if (newRows.length > 0) {
+      sheet.getRange(2, 1, newRows.length, 8).setValues(newRows);
+      for (var col = 1; col <= 8; col++) {
+        sheet.autoResizeColumn(col);
+      }
+    }
+
+    Logger.log("Berhasil merapikan tab: " + sheetName + " (" + newRows.length + " guru)");
+    convertedCount++;
+  }
+
+  var msg = "Selesai! " + convertedCount + " tab log berhasil dirapikan ke format baru. (" + skippedCount + " tab sudah format baru dan dilewati).";
+  Logger.log(msg);
+  SpreadsheetApp.getActiveSpreadsheet().toast(msg, "Konversi Berhasil", 8);
+}
