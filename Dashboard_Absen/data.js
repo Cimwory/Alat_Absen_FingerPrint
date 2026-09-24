@@ -33,7 +33,10 @@ const KNOWN_LOG_SHEETS = [
  * tanpa membombardir Google API secara berlebihan.
  */
 function getActiveLogSheetsList() {
-  const sheetSet = new Set(KNOWN_LOG_SHEETS);
+  // Ambil 10 sheet log terbaru yang aktif + tab hari ini dan beberapa hari terakhir
+  // Ini menghindari pemanggilan 40+ URL sekaligus yang memicu rate-limit / CORS redirect Google
+  const recentKnown = KNOWN_LOG_SHEETS.slice(0, 10);
+  const sheetSet = new Set(recentKnown);
   const now = new Date();
   for (let offset = -1; offset <= 4; offset++) {
     const d = new Date(now);
@@ -176,9 +179,12 @@ async function loadLiveGoogleSheetData() {
   isLiveLoading = true;
 
   try {
-    // 1. Tarik Data Master Guru dari sheet "Database Guru" (dengan anti-cache)
+    // 1. Tarik Data Master Guru dari sheet "Database Guru" (dengan anti-cache & timeout aman)
+    const dbController = new AbortController();
+    const dbTimeout = setTimeout(() => dbController.abort(), 4000);
     const dbUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Database%20Guru&tq=select%20*&_=${Date.now()}`;
-    const dbRes = await fetch(dbUrl);
+    const dbRes = await fetch(dbUrl, { signal: dbController.signal });
+    clearTimeout(dbTimeout);
     const dbText = await dbRes.text();
     const dbJson = parseGvizResponse(dbText);
 
@@ -234,18 +240,21 @@ async function loadLiveGoogleSheetData() {
       }
     }
 
-    // 2. Tarik Data Log Absensi dari Seluruh Sheet Log Riwayat (Dinamis & Terjadwal)
+    // 2. Tarik Data Log Absensi dari Sheet Log Riwayat (Dinamis & Terjadwal)
     const logsToFetch = getActiveLogSheetsList();
     const allFetchedLogs = [];
 
-    // Gunakan batching (6 request sekaligus) agar tidak terkena rate limiting Google GViz
-    const BATCH_SIZE = 6;
+    // Gunakan batching ramah (4 request sekaligus) agar tidak terkena rate limiting Google GViz
+    const BATCH_SIZE = 4;
     for (let bIdx = 0; bIdx < logsToFetch.length; bIdx += BATCH_SIZE) {
       const currentBatch = logsToFetch.slice(bIdx, bIdx + BATCH_SIZE);
       await Promise.all(currentBatch.map(async (sheetName) => {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
           const logUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&tq=select%20*&_=${Date.now()}`;
-          const logRes = await fetch(logUrl);
+          const logRes = await fetch(logUrl, { signal: controller.signal });
+          clearTimeout(timeoutId);
           const logText = await logRes.text();
           const logJson = parseGvizResponse(logText);
 

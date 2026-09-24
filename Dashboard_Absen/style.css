@@ -3459,4 +3459,17 @@ body {
   40%, 80% { transform: translateX(10px); }
 }
 
+/* IMMEDIATE GATE LOCK ENFORCEMENT */
+html.portal-gate-locked #splashScreen {
+  display: none !important;
+}
+html.portal-gate-locked #authGateScreen {
+  display: flex !important;
+}
+html.portal-gate-locked .app-container,
+html.portal-gate-locked #mobileDockWrapper {
+  display: none !important;
+}
+
+
 

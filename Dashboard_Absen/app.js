@@ -15,6 +15,12 @@ async function runSplashScreen(dataLoadPromise) {
   const statusEl = document.getElementById('splashStatusText');
   const percentEl = document.getElementById('splashPercentText');
 
+  // Jika website masih terkunci, lewati splash screen seketika agar tidak memblokir layar PIN
+  if (!isWebsiteGateUnlocked()) {
+    if (splashEl) splashEl.style.display = 'none';
+    return true;
+  }
+
   if (!splashEl) {
     return await dataLoadPromise;
   }
@@ -22,6 +28,11 @@ async function runSplashScreen(dataLoadPromise) {
   let progress = 0;
   let isDataLoaded = false;
   let dataResult = null;
+
+  // Batas waktu maksimal splash screen 3.5 detik agar TIDAK PERNAH HANG/STUCK
+  const safetyTimeout = setTimeout(() => {
+    isDataLoaded = true;
+  }, 3500);
 
   dataLoadPromise.then(res => {
     isDataLoaded = true;
@@ -34,7 +45,7 @@ async function runSplashScreen(dataLoadPromise) {
 
   return new Promise((resolve) => {
     const startTime = Date.now();
-    const minDuration = 1800; // Minimal 1.8 detik tampilan mewah yang elegan
+    const minDuration = 1600; // Minimal 1.6 detik tampilan mewah yang elegan
 
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -47,19 +58,22 @@ async function runSplashScreen(dataLoadPromise) {
         } else if (progress < 75) {
           progress += Math.random() * 3 + 1.5;
           if (statusEl) statusEl.textContent = "Memuat Data Guru & Sensor Biometrik...";
-        } else if (progress < 90) {
+        } else if (progress < 95) {
           progress += Math.random() * 1.5 + 0.5;
           if (statusEl) statusEl.textContent = "Menyinkronkan Riwayat Check In & Check Out...";
+        } else if (progress < 99) {
+          progress += 0.3;
         }
       } else {
         // Data sudah siap dari server, akselerasi ke 100%
         if (statusEl) statusEl.textContent = "Menyinkronkan Riwayat Check In & Check Out...";
-        progress += 6.5;
+        progress += 8.5;
       }
 
       if (progress >= 100 && (elapsed >= minDuration || isDataLoaded)) {
         progress = 100;
         clearInterval(timer);
+        clearTimeout(safetyTimeout);
 
         if (barEl) barEl.style.width = '100%';
         if (percentEl) percentEl.textContent = '100%';
@@ -71,8 +85,8 @@ async function runSplashScreen(dataLoadPromise) {
           setTimeout(() => {
             splashEl.style.display = 'none';
             resolve(dataResult);
-          }, 850);
-        }, 220);
+          }, 600);
+        }, 200);
       } else {
         if (progress > 98 && !isDataLoaded) progress = 98; // Tahan di 98% jika server butuh waktu lebih
         if (barEl) barEl.style.width = `${Math.min(100, Math.round(progress))}%`;
@@ -83,6 +97,11 @@ async function runSplashScreen(dataLoadPromise) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Jika website masih terkunci, tampilkan Lock Gate SEKETIKA tanpa menunggu proses apapun
+  if (!isWebsiteGateUnlocked()) {
+    initAuthLockScreen();
+  }
+
   initClock();
   initSimulatorSelect();
   initMobileDock();
@@ -91,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dataPromise = loadLiveGoogleSheetData();
   const success = await runSplashScreen(dataPromise);
 
-  // Kunci halaman jika belum dibuka dengan PIN
+  // Kunci halaman jika belum dibuka dengan PIN & render views
   initAuthLockScreen();
   renderAllViews();
 
@@ -99,11 +118,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     showToast(`Tersambung: ${masterGuru.length} Guru & ${attendanceLogs.length} Log Presensi`, "success");
   }
 
-  // Sinkronisasi otomatis di latar belakang setiap 20 detik
+  // Sinkronisasi otomatis di latar belakang setiap 25 detik
   setInterval(async () => {
     await loadLiveGoogleSheetData();
     renderAllViews();
-  }, 20000);
+  }, 25000);
 });
 
 // ==========================================
@@ -1863,9 +1882,12 @@ function initAuthLockScreen() {
   const gate = document.getElementById('authGateScreen');
   const appContainer = document.querySelector('.app-container');
   const dock = document.getElementById('mobileDockWrapper');
+  const splashEl = document.getElementById('splashScreen');
 
   if (!isWebsiteGateUnlocked()) {
     // WEBSITE TERKUNCI (Halaman depan ditutup)
+    document.documentElement.classList.add('portal-gate-locked');
+    if (splashEl) splashEl.style.display = 'none';
     if (gate) {
       gate.classList.remove('unlocked');
       gate.style.display = 'flex';
@@ -1892,6 +1914,7 @@ function initAuthLockScreen() {
     if (dock) dock.style.display = 'none';
   } else {
     // WEBSITE TERBUKA
+    document.documentElement.classList.remove('portal-gate-locked');
     if (gate) {
       gate.classList.add('unlocked');
       setTimeout(() => { gate.style.display = 'none'; }, 450);
@@ -1927,6 +1950,7 @@ function handleWebsitePinUnlock(e) {
     }
 
     sessionStorage.setItem('website_gate_unlocked', 'true');
+    document.documentElement.classList.remove('portal-gate-locked');
     showToast("Akses Terbuka! Selamat datang di Portal Presensi.", "success");
 
     setTimeout(() => {
@@ -1960,6 +1984,7 @@ function togglePinVisibility() {
 function relockWebsiteGate() {
   if (confirm("Kunci kembali halaman depan website? Anda akan diarahkan ke layar PIN.")) {
     sessionStorage.removeItem('website_gate_unlocked');
+    document.documentElement.classList.add('portal-gate-locked');
     initAuthLockScreen();
     showToast("Halaman depan website berhasil dikunci kembali.", "info");
   }
