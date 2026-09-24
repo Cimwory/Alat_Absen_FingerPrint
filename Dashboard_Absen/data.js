@@ -33,12 +33,14 @@ const KNOWN_LOG_SHEETS = [
  * tanpa membombardir Google API secara berlebihan.
  */
 function getActiveLogSheetsList() {
-  // Ambil 10 sheet log terbaru yang aktif + tab hari ini dan beberapa hari terakhir
-  // Ini menghindari pemanggilan 40+ URL sekaligus yang memicu rate-limit / CORS redirect Google
-  const recentKnown = KNOWN_LOG_SHEETS.slice(0, 10);
+  // Hanya query sheet yang relevan (4 sheet log September terbaru yang pasti ada + hari ini & 3 hari terakhir)
+  // Tidak memanggil tab tanggal lama yang sudah tersimpan di cache lokal
+  const recentKnown = [
+    'Log_19-09-2026', 'Log_18-09-2026', 'Log_17-09-2026', 'Log_16-09-2026'
+  ];
   const sheetSet = new Set(recentKnown);
   const now = new Date();
-  for (let offset = -1; offset <= 4; offset++) {
+  for (let offset = -1; offset <= 3; offset++) {
     const d = new Date(now);
     d.setDate(d.getDate() - offset);
     const dd = String(d.getDate()).padStart(2, '0');
@@ -53,6 +55,14 @@ function getActiveLogSheetsList() {
 let masterGuru = [];
 let attendanceLogs = [];
 let isLiveLoading = false;
+
+// Inisialisasi dari cache lokal untuk responsivitas seketika
+try {
+  const cachedGuru = localStorage.getItem('cache_master_guru');
+  if (cachedGuru) masterGuru = JSON.parse(cachedGuru);
+  const cachedLogs = localStorage.getItem('cache_attendance_logs');
+  if (cachedLogs) attendanceLogs = JSON.parse(cachedLogs);
+} catch (e) {}
 
 // Helper Nama Hari
 const HARI_MAP = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -237,6 +247,7 @@ async function loadLiveGoogleSheetData() {
 
       if (parsedTeachers.length > 0) {
         masterGuru = parsedTeachers;
+        try { localStorage.setItem('cache_master_guru', JSON.stringify(masterGuru)); } catch (e) {}
       }
     }
 
@@ -450,19 +461,24 @@ async function loadLiveGoogleSheetData() {
             });
           }
         } catch (err) {
-          console.warn(`Gagal memuat log sheet ${sheetName}:`, err);
+          // Tab sheet belum ada atau di-redirect Google, abaikan secara tenang
         }
       }));
 
       // Jeda mikro antar-batch untuk stabilitas Google API
       if (bIdx + BATCH_SIZE < logsToFetch.length) {
-        await new Promise(r => setTimeout(r, 40));
+        await new Promise(r => setTimeout(r, 60));
       }
     }
 
     if (allFetchedLogs.length > 0) {
-      // Urutkan dari tanggal terbaru secara kronologis (September -> Agustus -> Juli)
-      attendanceLogs = allFetchedLogs.sort((a, b) => parseDateTs(b.tanggal) - parseDateTs(a.tanggal));
+      // Gabungkan log baru yang ditarik dengan log riwayat yang ada di cache (hindari duplikasi berdasarkan id log)
+      const existingMap = new Map();
+      attendanceLogs.forEach(l => existingMap.set(l.id, l));
+      allFetchedLogs.forEach(l => existingMap.set(l.id, l));
+
+      attendanceLogs = Array.from(existingMap.values()).sort((a, b) => parseDateTs(b.tanggal) - parseDateTs(a.tanggal));
+      try { localStorage.setItem('cache_attendance_logs', JSON.stringify(attendanceLogs)); } catch (e) {}
     }
 
     console.log(`Berhasil memuat ${masterGuru.length} guru dan ${attendanceLogs.length} baris log presensi bersih dari Google Spreadsheet.`);

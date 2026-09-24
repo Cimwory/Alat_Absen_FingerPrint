@@ -96,33 +96,55 @@ async function runSplashScreen(dataLoadPromise) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Jika website masih terkunci, tampilkan Lock Gate SEKETIKA tanpa menunggu proses apapun
-  if (!isWebsiteGateUnlocked()) {
-    initAuthLockScreen();
-  }
+let liveSyncInterval = null;
 
+function startLiveSync() {
+  stopLiveSync();
+  loadLiveGoogleSheetData().then((success) => {
+    renderAllViews();
+    if (success && masterGuru.length > 0) {
+      showToast(`Tersambung: ${masterGuru.length} Guru & ${attendanceLogs.length} Log Presensi`, "success");
+    }
+  });
+
+  // Sinkronisasi otomatis setiap 30 detik HANYA saat website dalam kondisi UNLOCKED
+  liveSyncInterval = setInterval(async () => {
+    if (isWebsiteGateUnlocked()) {
+      await loadLiveGoogleSheetData();
+      renderAllViews();
+    } else {
+      stopLiveSync();
+    }
+  }, 30000);
+}
+
+function stopLiveSync() {
+  if (liveSyncInterval) {
+    clearInterval(liveSyncInterval);
+    liveSyncInterval = null;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   initClock();
   initSimulatorSelect();
   initMobileDock();
 
-  // Mulai memuat data Google Spreadsheet bersamaan dengan splash screen mewah
-  const dataPromise = loadLiveGoogleSheetData();
-  const success = await runSplashScreen(dataPromise);
-
-  // Kunci halaman jika belum dibuka dengan PIN & render views
-  initAuthLockScreen();
-  renderAllViews();
-
-  if (success && masterGuru.length > 0 && isWebsiteGateUnlocked()) {
-    showToast(`Tersambung: ${masterGuru.length} Guru & ${attendanceLogs.length} Log Presensi`, "success");
-  }
-
-  // Sinkronisasi otomatis di latar belakang setiap 25 detik
-  setInterval(async () => {
-    await loadLiveGoogleSheetData();
+  if (!isWebsiteGateUnlocked()) {
+    // WEBSITE TERKUNCI:
+    // Tampilkan Lock Gate SEKETIKA. Jangan panggil loadLiveGoogleSheetData(),
+    // jangan jalankan splash screen, jangan jalankan sync interval di latar belakang!
+    initAuthLockScreen();
+    const splashEl = document.getElementById('splashScreen');
+    if (splashEl) splashEl.style.display = 'none';
+  } else {
+    // WEBSITE SUDAH TERBUKA (Dalam sesi yang sama):
+    initAuthLockScreen();
+    const dataPromise = loadLiveGoogleSheetData();
+    await runSplashScreen(dataPromise);
     renderAllViews();
-  }, 25000);
+    startLiveSync();
+  }
 });
 
 // ==========================================
@@ -1956,6 +1978,8 @@ function handleWebsitePinUnlock(e) {
     setTimeout(() => {
       initAuthLockScreen();
       renderAllViews();
+      // Mulai sinkronisasi Google Sheets setelah portal terbuka
+      startLiveSync();
     }, 700);
   } else {
     if (errorMsg) errorMsg.style.display = 'flex';
@@ -1983,6 +2007,7 @@ function togglePinVisibility() {
 
 function relockWebsiteGate() {
   if (confirm("Kunci kembali halaman depan website? Anda akan diarahkan ke layar PIN.")) {
+    stopLiveSync();
     sessionStorage.removeItem('website_gate_unlocked');
     document.documentElement.classList.add('portal-gate-locked');
     initAuthLockScreen();
