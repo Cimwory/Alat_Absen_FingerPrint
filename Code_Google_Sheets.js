@@ -57,6 +57,75 @@ function doGet(e) {
   }
 
   // =========================================================================
+  // SISTEM KONTROL LISENSI & TANGGAL JATUH TEMPO (SUBSCRIPTION EXPIRY GATE)
+  // =========================================================================
+  // Inisialisasi sel Masa Aktif di sheet Database Guru jika belum ada
+  if (dbSheet.getRange("F1").getValue() === "") {
+    dbSheet.getRange("F1").setValue("Masa Aktif:");
+    dbSheet.getRange("F1").setFontWeight("bold");
+  }
+  if (dbSheet.getRange("G1").getValue() === "") {
+    // Tanggal default jatuh tempo (format: dd-MM-yyyy)
+    dbSheet.getRange("G1").setValue("31-10-2026");
+    dbSheet.getRange("G1").setFontWeight("bold").setBackground("#fef08a");
+  }
+
+  var expiryVal = dbSheet.getRange("G1").getValue();
+  var isExpired = false;
+
+  if (expiryVal) {
+    var expiryDate = null;
+    if (expiryVal instanceof Date) {
+      expiryDate = new Date(expiryVal);
+    } else {
+      var strExp = String(expiryVal).trim();
+      var parts = strExp.split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          // yyyy-MM-dd
+          expiryDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+          // dd-MM-yyyy
+          expiryDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
+      }
+    }
+
+    if (expiryDate && !isNaN(expiryDate.getTime())) {
+      // Masa aktif berlaku sampai pukul 23:59:59 pada tanggal tersebut
+      expiryDate.setHours(23, 59, 59, 999);
+      if (date.getTime() > expiryDate.getTime()) {
+        isExpired = true;
+      }
+    }
+  }
+
+  // JIKA SUDAH KEDALUWARSA / HABIS MASA SEWA:
+  if (isExpired) {
+    // 1. Jika diakses dari Web Dashboard
+    if (action === "getUsers" || action === "getAllLogSheets" || action === "addTeacher" || action === "editTeacher" || action === "deleteTeacher" || action === "requestEnroll" || action === "checkEnrollStatus") {
+      return respondJson({ 
+        success: false, 
+        expired: true, 
+        message: "Masa langganan cloud telah berakhir. Silakan hubungi admin untuk perpanjangan layanan." 
+      });
+    }
+
+    // 2. Jika polling Cloud Relay dari ESP32
+    if (action === "getCommand") {
+      return ContentService.createTextOutput("NONE");
+    }
+    if (action === "completeEnroll") {
+      return ContentService.createTextOutput("ERR|LISENSI HABIS|Hubungi Admin");
+    }
+
+    // 3. Jika tap absensi biasa dari Mesin ESP32
+    // Baris 1 LCD: LISENSI HABIS | Baris 2 LCD: HUBUNGI ADMIN (Buzzer Fail)
+    return ContentService.createTextOutput("ERR|LISENSI HABIS|HUBUNGI ADMIN");
+  }
+  // =========================================================================
+
+  // =========================================================================
   // 1. API UNTUK DASHBOARD WEB: MENGAMBIL DATA GURU (GET USERS)
   // =========================================================================
   if (action === "getUsers") {
