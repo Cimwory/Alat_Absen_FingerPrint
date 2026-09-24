@@ -55,7 +55,7 @@
   </script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css?v=2.4">
+  <link rel="stylesheet" href="style.css?v=2.5">
 </head>
 <body class="bg-surface text-on-surface antialiased">
 
@@ -109,159 +109,100 @@
   <!-- ==========================================
        DEDICATED FULL-SCREEN AUTH GATE / LOCK SCREEN
        ========================================== -->
-  <div id="authGateScreen" class="auth-gate-screen" style="display: none;">
+  <!-- ==========================================
+       WEBSITE SECURITY LOCK GATE (PIN: 120170)
+       ========================================== -->
+  <div id="authGateScreen" class="auth-gate-screen" style="display: flex;">
     <!-- Ambient Aurora Glows -->
     <div class="splash-glow splash-glow-1"></div>
     <div class="splash-glow splash-glow-2"></div>
     <div class="splash-glow splash-glow-3"></div>
 
-    <div class="auth-gate-card">
+    <div class="auth-gate-card" id="lockGateCard">
       <!-- Luxury Brand Header -->
       <div class="auth-gate-header">
-        <div class="auth-gate-emblem">
+        <div class="auth-gate-emblem" id="gateLockEmblem">
           <div class="splash-ring-outer"></div>
           <div class="splash-ring-inner"></div>
-          <div class="splash-icon-box" style="width: 58px; height: 58px;">
-            <i class="fa-solid fa-graduation-cap" style="font-size: 26px; color: #10b981;"></i>
+          <div class="splash-icon-box" id="gateLockIconBox" style="width: 64px; height: 64px;">
+            <i id="gateLockIcon" class="fa-solid fa-lock" style="font-size: 28px; color: #10b981; transition: all 0.3s ease;"></i>
           </div>
         </div>
-        <div class="splash-badge" style="margin-bottom: 6px;">
+
+        <div class="splash-badge" style="margin-bottom: 8px;">
           <span class="splash-badge-dot"></span>
-          <span>SMA DARUTTAQWA</span>
-        </div>
-        <h2 class="auth-gate-title">PORTAL PRESENSI GURU</h2>
-        <p class="auth-gate-subtitle">Silakan Masuk atau Registrasi untuk Mengakses Sistem</p>
-      </div>
-
-      <!-- Auth Switch Tabs -->
-      <div class="auth-tabs" style="margin-bottom: 16px;">
-        <button class="auth-tab-btn active" id="gateTabBtnLogin" onclick="switchGateAuthTab('LOGIN')">
-          <i class="fa-solid fa-right-to-bracket"></i> Masuk Akun
-        </button>
-        <button class="auth-tab-btn" id="gateTabBtnRegister" onclick="switchGateAuthTab('REGISTER')">
-          <i class="fa-solid fa-user-plus"></i> Registrasi Baru
-        </button>
-      </div>
-
-      <!-- Tab 1: Panel Masuk (Login) -->
-      <div id="gatePanelLogin">
-        <!-- 1-Click Quick Login Chips for Test Accounts -->
-        <div class="quick-login-box" style="margin-bottom: 16px; padding: 10px 12px;">
-          <span class="quick-login-title" style="font-size: 10.5px; margin-bottom: 6px;">
-            <i class="fa-solid fa-bolt"></i> 1-Klik Akun Uji Coba:
-          </span>
-          <div class="quick-login-chips" style="gap: 5px;">
-            <button class="quick-chip chip-admin" onclick="quickFillGateLogin('322360032', 'password123')">
-              <i class="fa-solid fa-crown"></i> Kindy (Admin)
-            </button>
-            <button class="quick-chip chip-guru" onclick="quickFillGateLogin('12345', 'password123')">
-              <i class="fa-solid fa-chalkboard-user"></i> Miftahul Jannah (Guru)
-            </button>
-            <button class="quick-chip chip-kepsek" onclick="quickFillGateLogin('54321', 'password123')">
-              <i class="fa-solid fa-graduation-cap"></i> Abdul aziz (Kepsek)
-            </button>
-          </div>
+          <span>SMA DARUTTAQWA &bull; KEAMANAN SISTEM</span>
         </div>
 
-        <form id="gateLoginForm" onsubmit="handleGateLoginSubmit(event)">
-          <div class="sim-form-group">
-            <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-              Nomor Induk Kependudukan (NIK): <span style="color: var(--danger);">*</span>
-            </label>
-            <input type="text" id="gateLoginNik" class="search-input" placeholder="Masukkan NIK Anda" required style="width: 100%; border: 1px solid var(--border-color); padding: 10px 14px; font-size: 13px;">
-          </div>
+        <h2 class="auth-gate-title" style="font-size: 20px; font-weight: 800; color: #004532; margin-bottom: 4px;">
+          AKSES PORTAL TERKUNCI
+        </h2>
 
-          <div class="sim-form-group" style="margin-top: 12px;">
-            <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-              Kata Sandi / Password: <span style="color: var(--danger);">*</span>
-            </label>
-            <div style="position: relative;">
-              <input type="password" id="gateLoginPassword" class="search-input" placeholder="Masukkan password" required style="width: 100%; border: 1px solid var(--border-color); padding: 10px 40px 10px 14px; font-size: 13px;">
-              <button type="button" onclick="togglePasswordVisibility('gateLoginPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
-                <i class="fa-regular fa-eye"></i>
-              </button>
-            </div>
-          </div>
+        <!-- Keterangan Permintaan User -->
+        <div class="lock-notice-capsule">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Website Locked &bull; Hubungi admin untuk mengakses website</span>
+        </div>
 
-          <button type="submit" class="btn btn-primary" id="btnGateLoginSubmit" style="width: 100%; justify-content: center; padding: 12px; font-size: 13px; font-weight: 700; margin-top: 18px;">
-            <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dashboard
-          </button>
-        </form>
+        <p class="auth-gate-subtitle" style="font-size: 12px; color: #475569; margin: 6px 0 16px 0; line-height: 1.5; text-align: center;">
+          Halaman depan portal presensi saat ini sementara ditutup untuk umum. Silakan masukkan <strong>PIN Akses</strong> yang valid atau hubungi administrator untuk membuka halaman.
+        </p>
       </div>
 
-      <!-- Tab 2: Panel Registrasi Baru -->
-      <div id="gatePanelRegister" style="display: none;">
-        <form id="gateRegisterForm" onsubmit="handleGateRegisterSubmit(event)">
-          <div class="sim-form-group">
-            <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-              Nomor Induk Kependudukan (NIK): <span style="color: var(--danger);">*</span>
-            </label>
-            <input type="text" id="gateRegNik" class="search-input" placeholder="Contoh: 351508..." required style="width: 100%; border: 1px solid var(--border-color); padding: 9px 12px; font-size: 12.5px;">
+      <!-- PIN Input Form -->
+      <form id="websitePinForm" onsubmit="handleWebsitePinUnlock(event)" style="margin-top: 4px;">
+        <div class="pin-input-group">
+          <label for="gatePinInput" class="pin-input-label">
+            <i class="fa-solid fa-key" style="color: #006c49;"></i> Masukkan PIN Akses (6 Digit):
+          </label>
+          <div class="pin-input-wrapper">
+            <input 
+              type="password" 
+              id="gatePinInput" 
+              maxlength="6" 
+              pattern="[0-9]*" 
+              inputmode="numeric" 
+              class="pin-code-input" 
+              placeholder="• • • • • •" 
+              autocomplete="off" 
+              required
+              autofocus
+            >
+            <button type="button" class="btn-toggle-pin-visibility" onclick="togglePinVisibility()" title="Lihat PIN">
+              <i id="iconTogglePin" class="fa-regular fa-eye"></i>
+            </button>
           </div>
+        </div>
 
-          <div class="sim-form-group" style="margin-top: 10px;">
-            <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-              Nama Lengkap & Gelar: <span style="color: var(--danger);">*</span>
-            </label>
-            <input type="text" id="gateRegName" class="search-input" placeholder="Contoh: Bpk. Ahmad, S.Pd." required style="width: 100%; border: 1px solid var(--border-color); padding: 9px 12px; font-size: 12.5px;">
-          </div>
+        <!-- Error Alert Container -->
+        <div id="gatePinErrorMsg" class="gate-pin-error" style="display: none;">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span>PIN salah! Hubungi admin untuk mendapatkan PIN akses.</span>
+        </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
-            <div class="sim-form-group">
-              <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-                Pilihan Unit: <span style="color: var(--danger);">*</span>
-              </label>
-              <select id="gateRegCategory" class="sim-select" style="width: 100%;" onchange="updateGateRegDeviceHint()">
-                <option value="PENGAJAR">Guru (Pengajar)</option>
-                <option value="PENGURUS">Pengelola (Staf)</option>
-              </select>
-            </div>
+        <!-- Success Alert Container -->
+        <div id="gatePinSuccessMsg" class="gate-pin-success" style="display: none;">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>PIN Benar! Membuka akses portal...</span>
+        </div>
 
-            <div class="sim-form-group">
-              <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-                Sensor Absen:
-              </label>
-              <select id="gateRegSensor" class="sim-select" style="width: 100%;">
-                <option value="FINGER">Sidik Jari (FINGER)</option>
-                <option value="RFID">Kartu RFID</option>
-              </select>
-            </div>
-          </div>
+        <!-- Unlock Button -->
+        <button type="submit" class="btn-unlock-gate" id="btnUnlockGate">
+          <i class="fa-solid fa-lock-open"></i> Buka Akses Website
+        </button>
+      </form>
 
-          <!-- Trigger Notice -->
-          <div id="gateRegDeviceNotice" style="margin-top: 10px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; padding: 8px 10px; font-size: 11px; color: #a5f3fc; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-microchip" style="color: var(--accent-cyan);"></i>
-            <span id="gateRegDeviceNoticeText">Unit Guru otomatis memicu <strong>Mesin A (Prefix A_)</strong> untuk rekam sidik jari.</span>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
-            <div class="sim-form-group">
-              <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-                Password: <span style="color: var(--danger);">*</span>
-              </label>
-              <input type="password" id="gateRegPassword" class="search-input" placeholder="Min. 6 karakter" required style="width: 100%; border: 1px solid var(--border-color); padding: 9px 12px; font-size: 12.5px;">
-            </div>
-
-            <div class="sim-form-group">
-              <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block;">
-                Ulangi Password: <span style="color: var(--danger);">*</span>
-              </label>
-              <input type="password" id="gateRegConfirmPassword" class="search-input" placeholder="Ketik ulang" required style="width: 100%; border: 1px solid var(--border-color); padding: 9px 12px; font-size: 12.5px;">
-            </div>
-          </div>
-
-          <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 12px; font-size: 12.5px; margin-top: 16px; background: linear-gradient(135deg, #06b6d4, #0284c7); color: #fff; border: none; font-weight: 700;">
-            <i class="fa-solid fa-fingerprint"></i> Daftar & Rekam di Mesin
-          </button>
-        </form>
-      </div>
-
-      <!-- Security footer notice -->
-      <div style="margin-top: 16px; text-align: center; font-size: 10.5px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <i class="fa-solid fa-lock" style="color: var(--success);"></i>
-        <span>Sistem Terenkripsi & Terkoneksi Google Spreadsheet</span>
+      <!-- Admin Contact Box -->
+      <div class="gate-contact-footer">
+        <a href="https://wa.me/6281234567890?text=Halo%20Admin%20SMA%20Daruttaqwa,%20saya%20memerlukan%20PIN%20akses%20ke%20Portal%20Presensi" target="_blank" class="gate-wa-btn">
+          <i class="fa-brands fa-whatsapp" style="font-size: 15px;"></i> Hubungi Admin via WhatsApp
+        </a>
+        <div class="gate-hint-text">
+          <i class="fa-solid fa-circle-info"></i> PIN Otorisasi resmi: <strong>120170</strong>
+        </div>
       </div>
     </div>
+  </div>
   </div>
 
   <div class="app-container">
@@ -408,6 +349,12 @@
           <button class="btn btn-outline-emerald hidden sm:inline-flex" onclick="openSimulatorModal()" title="Simulasi Tap Mesin">
             <span class="material-symbols-outlined text-[18px]">sensors</span>
             <span class="hidden md:inline">Uji Coba Presensi</span>
+          </button>
+
+          <!-- Tombol Kunci Portal (PIN Gate) -->
+          <button class="btn btn-secondary inline-flex items-center gap-1.5" onclick="relockWebsiteGate()" title="Kunci Kembali Halaman Depan" style="padding: 6px 10px; font-size: 11.5px; border-radius: 8px; color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.25); background: rgba(220, 38, 38, 0.05);">
+            <i class="fa-solid fa-lock"></i>
+            <span class="hidden lg:inline font-semibold">Kunci Portal</span>
           </button>
 
           <!-- Auth Status / Login Button Container -->
@@ -1432,8 +1379,8 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- Scripts -->
-  <script src="data.js?v=2.4"></script>
-  <script src="app.js?v=2.4"></script>
+  <script src="data.js?v=2.5"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>
 

@@ -91,11 +91,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dataPromise = loadLiveGoogleSheetData();
   const success = await runSplashScreen(dataPromise);
 
-  // Kunci halaman jika belum login
+  // Kunci halaman jika belum dibuka dengan PIN
   initAuthLockScreen();
   renderAllViews();
 
-  if (success && masterGuru.length > 0 && getCurrentUser()) {
+  if (success && masterGuru.length > 0 && isWebsiteGateUnlocked()) {
     showToast(`Tersambung: ${masterGuru.length} Guru & ${attendanceLogs.length} Log Presensi`, "success");
   }
 
@@ -1853,138 +1853,116 @@ function quickFillLogin(nik, password) {
   executeLogin(nik, password);
 }
 
+const CORRECT_GATE_PIN = "120170";
+
+function isWebsiteGateUnlocked() {
+  return sessionStorage.getItem('website_gate_unlocked') === 'true';
+}
+
 function initAuthLockScreen() {
-  const user = getCurrentUser();
   const gate = document.getElementById('authGateScreen');
   const appContainer = document.querySelector('.app-container');
   const dock = document.getElementById('mobileDockWrapper');
 
-  if (!user) {
+  if (!isWebsiteGateUnlocked()) {
+    // WEBSITE TERKUNCI (Halaman depan ditutup)
     if (gate) {
       gate.classList.remove('unlocked');
       gate.style.display = 'flex';
+      const pinInput = document.getElementById('gatePinInput');
+      if (pinInput) pinInput.value = '';
+      const errMsg = document.getElementById('gatePinErrorMsg');
+      if (errMsg) errMsg.style.display = 'none';
+      const succMsg = document.getElementById('gatePinSuccessMsg');
+      if (succMsg) succMsg.style.display = 'none';
+      const btn = document.getElementById('btnUnlockGate');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> Buka Akses Website';
+        btn.style.background = '';
+      }
+      const lockIcon = document.getElementById('gateLockIcon');
+      if (lockIcon) {
+        lockIcon.className = 'fa-solid fa-lock';
+        lockIcon.style.color = '#10b981';
+        lockIcon.style.transform = 'scale(1)';
+      }
     }
     if (appContainer) appContainer.style.display = 'none';
     if (dock) dock.style.display = 'none';
   } else {
+    // WEBSITE TERBUKA
     if (gate) {
       gate.classList.add('unlocked');
-      gate.style.display = 'none';
+      setTimeout(() => { gate.style.display = 'none'; }, 450);
     }
     if (appContainer) appContainer.style.display = 'flex';
     if (dock) dock.style.display = '';
   }
 }
 
-function switchGateAuthTab(tabName) {
-  const btnLogin = document.getElementById('gateTabBtnLogin');
-  const btnRegister = document.getElementById('gateTabBtnRegister');
-  const panelLogin = document.getElementById('gatePanelLogin');
-  const panelRegister = document.getElementById('gatePanelRegister');
-
-  if (!btnLogin || !btnRegister) return;
-
-  if (tabName === 'LOGIN') {
-    btnLogin.classList.add('active');
-    btnRegister.classList.remove('active');
-    if (panelLogin) panelLogin.style.display = 'block';
-    if (panelRegister) panelRegister.style.display = 'none';
-  } else {
-    btnRegister.classList.add('active');
-    btnLogin.classList.remove('active');
-    if (panelRegister) panelRegister.style.display = 'block';
-    if (panelLogin) panelLogin.style.display = 'none';
-  }
-}
-
-function updateGateRegDeviceHint() {
-  const category = document.getElementById('gateRegCategory').value;
-  const notice = document.getElementById('gateRegDeviceNoticeText');
-  if (!notice) return;
-  if (category === 'PENGAJAR') {
-    notice.innerHTML = 'Unit Guru otomatis memicu <strong>Mesin A (Prefix A_)</strong> untuk rekam sidik jari.';
-  } else {
-    notice.innerHTML = 'Unit Pengelola otomatis memicu <strong>Mesin B (Prefix B_)</strong> untuk rekam sidik jari.';
-  }
-}
-
-function quickFillGateLogin(nik, password) {
-  const nikInput = document.getElementById('gateLoginNik');
-  const passInput = document.getElementById('gateLoginPassword');
-  if (nikInput) nikInput.value = nik;
-  if (passInput) passInput.value = password;
-  executeLogin(nik, password);
-}
-
-function handleGateLoginSubmit(e) {
+function handleWebsitePinUnlock(e) {
   if (e) e.preventDefault();
-  const nik = document.getElementById('gateLoginNik').value.trim();
-  const password = document.getElementById('gateLoginPassword').value;
-  executeLogin(nik, password);
+  const input = document.getElementById('gatePinInput');
+  const errorMsg = document.getElementById('gatePinErrorMsg');
+  const successMsg = document.getElementById('gatePinSuccessMsg');
+  const lockCard = document.getElementById('lockGateCard');
+  const lockIcon = document.getElementById('gateLockIcon');
+  const btn = document.getElementById('btnUnlockGate');
+
+  const enteredPin = (input ? input.value : '').trim();
+
+  if (enteredPin === CORRECT_GATE_PIN) {
+    if (errorMsg) errorMsg.style.display = 'none';
+    if (successMsg) successMsg.style.display = 'flex';
+    if (lockIcon) {
+      lockIcon.className = 'fa-solid fa-lock-open';
+      lockIcon.style.color = '#10b981';
+      lockIcon.style.transform = 'scale(1.2)';
+    }
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Akses Dibuka!';
+      btn.style.background = '#10b981';
+    }
+
+    sessionStorage.setItem('website_gate_unlocked', 'true');
+    showToast("Akses Terbuka! Selamat datang di Portal Presensi.", "success");
+
+    setTimeout(() => {
+      initAuthLockScreen();
+      renderAllViews();
+    }, 700);
+  } else {
+    if (errorMsg) errorMsg.style.display = 'flex';
+    if (successMsg) successMsg.style.display = 'none';
+    if (lockCard) {
+      lockCard.classList.remove('shake-card');
+      void lockCard.offsetWidth; // trigger reflow
+      lockCard.classList.add('shake-card');
+    }
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+  }
 }
 
-function handleGateRegisterSubmit(e) {
-  if (e) e.preventDefault();
-  const nik = document.getElementById('gateRegNik').value.trim();
-  const name = document.getElementById('gateRegName').value.trim();
-  const category = document.getElementById('gateRegCategory').value;
-  const sensor = document.getElementById('gateRegSensor').value;
-  const pass = document.getElementById('gateRegPassword').value;
-  const confirmPass = document.getElementById('gateRegConfirmPassword').value;
+function togglePinVisibility() {
+  const input = document.getElementById('gatePinInput');
+  const icon = document.getElementById('iconTogglePin');
+  if (!input || !icon) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  icon.className = isPass ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+}
 
-  if (!nik || !name || !pass) {
-    showToast("Silakan lengkapi seluruh kolom formulir!", "warning");
-    return;
+function relockWebsiteGate() {
+  if (confirm("Kunci kembali halaman depan website? Anda akan diarahkan ke layar PIN.")) {
+    sessionStorage.removeItem('website_gate_unlocked');
+    initAuthLockScreen();
+    showToast("Halaman depan website berhasil dikunci kembali.", "info");
   }
-
-  if (pass.length < 6) {
-    showToast("Password minimal 6 karakter!", "warning");
-    return;
-  }
-  if (pass !== confirmPass) {
-    showToast("Konfirmasi password tidak cocok!", "error");
-    return;
-  }
-
-  const device = (category === 'PENGAJAR') ? 'A' : 'B';
-  const roleLabel = (category === 'PENGAJAR') ? 'Guru Pengajar' : 'Pengelola Sekolah';
-  const newId = getSuggestedNextId(device);
-
-  const newUser = {
-    nik: nik,
-    password: pass,
-    name: name,
-    role: (category === 'PENGAJAR') ? 'GURU' : 'PENGELOLA',
-    roleLabel: roleLabel,
-    category: category,
-    teacherId: newId,
-    photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${category === 'PENGURUS' ? '4f46e5' : '059669'}&color=fff&size=150&bold=true`
-  };
-
-  saveRegisteredUser(newUser);
-
-  // Buka kunci layar
-  const gate = document.getElementById('authGateScreen');
-  const appContainer = document.querySelector('.app-container');
-  const dock = document.getElementById('mobileDockWrapper');
-  if (gate) {
-    gate.classList.add('unlocked');
-    setTimeout(() => { gate.style.display = 'none'; }, 450);
-  }
-  if (appContainer) appContainer.style.display = 'flex';
-  if (dock) dock.style.display = '';
-
-  showToast(`Akun terdaftar! Menghubungkan ke Mesin ${device} untuk pendaftaran ${sensor}...`, "info");
-
-  document.getElementById('teacherFormName').value = name;
-  document.getElementById('teacherFormRole').value = roleLabel;
-  document.getElementById('teacherFormCategory').value = category;
-  document.getElementById('teacherFormSensor').value = sensor;
-  document.getElementById('teacherFormDevice').value = device;
-  document.getElementById('teacherFormId').value = newId;
-
-  setCurrentUser(newUser);
-  handleStartCloudEnroll();
 }
 
 function handleLoginSubmit(e) {

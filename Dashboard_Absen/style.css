@@ -3270,4 +3270,193 @@ body {
   to { opacity: 1; transform: scale(1); }
 }
 
+/* ==========================================================================
+   WEBSITE SECURITY PIN GATE & MAINTENANCE LOCK SCREEN
+   ========================================================================== */
+.lock-notice-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(234, 88, 12, 0.1);
+  border: 1px solid rgba(234, 88, 12, 0.25);
+  color: #ea580c;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin: 8px 0 10px 0;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.pin-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.pin-input-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pin-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.pin-code-input {
+  width: 100%;
+  padding: 12px 45px 12px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  letter-spacing: 8px;
+  text-align: center;
+  font-weight: 800;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  outline: none;
+  background: #f8fafc;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.pin-code-input:focus {
+  border-color: #006c49;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 108, 73, 0.15);
+}
+
+.btn-toggle-pin-visibility {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.btn-toggle-pin-visibility:hover {
+  color: #0f172a;
+}
+
+.btn-unlock-gate {
+  width: 100%;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #004532, #006c49);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 69, 50, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 14px;
+}
+
+.btn-unlock-gate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(0, 69, 50, 0.35);
+  background: linear-gradient(135deg, #005a41, #00875c);
+}
+
+.btn-unlock-gate:active {
+  transform: translateY(0);
+}
+
+.gate-pin-error {
+  background: #fee2e2;
+  border: 1px solid #f87171;
+  color: #b91c1c;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gate-pin-success {
+  background: #d1fae5;
+  border: 1px solid #34d399;
+  color: #065f46;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gate-contact-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(190, 201, 194, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.gate-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #15803d;
+  text-decoration: none;
+  padding: 7px 14px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.gate-wa-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  color: #166534;
+}
+
+.gate-hint-text {
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.shake-card {
+  animation: gateShake 0.45s ease-in-out !important;
+}
+
+@keyframes gateShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+
 
