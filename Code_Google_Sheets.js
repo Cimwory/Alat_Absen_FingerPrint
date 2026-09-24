@@ -57,42 +57,25 @@ function doGet(e) {
   }
 
   // =========================================================================
-  // SISTEM KONTROL LISENSI & TANGGAL JATUH TEMPO (SUBSCRIPTION EXPIRY GATE)
+  // SISTEM KONTROL LISENSI & MASA AKTIF (HANYA DI DALAM SCRIPT, TIDAK DI SHEET)
   // =========================================================================
-  // Inisialisasi sel Masa Aktif di sheet Database Guru jika belum ada
-  if (dbSheet.getRange("F1").getValue() === "") {
-    dbSheet.getRange("F1").setValue("Masa Aktif:");
-    dbSheet.getRange("F1").setFontWeight("bold");
-  }
-  if (dbSheet.getRange("G1").getValue() === "") {
-    // Tanggal default jatuh tempo (format: dd-MM-yyyy)
-    dbSheet.getRange("G1").setValue("31-10-2026");
-    dbSheet.getRange("G1").setFontWeight("bold").setBackground("#fef08a");
-  }
+  // Atur batas tanggal masa sewa di sini (Format: "dd-MM-yyyy")
+  // Pelanggan TIDAK BISA melihat atau mengubah tanggal ini dari Google Sheet!
+  var TANGGAL_KADALUWARSA = "31-10-2026"; 
 
-  var expiryVal = dbSheet.getRange("G1").getValue();
+  // Kunci manual seketika (Ubah ke true jika ingin mengunci alat secara paksa)
+  var KUNCI_MANUAL = false;
+
   var isExpired = false;
 
-  if (expiryVal) {
-    var expiryDate = null;
-    if (expiryVal instanceof Date) {
-      expiryDate = new Date(expiryVal);
-    } else {
-      var strExp = String(expiryVal).trim();
-      var parts = strExp.split(/[-/]/);
-      if (parts.length === 3) {
-        if (parts[0].length === 4) {
-          // yyyy-MM-dd
-          expiryDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else {
-          // dd-MM-yyyy
-          expiryDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        }
-      }
-    }
-
-    if (expiryDate && !isNaN(expiryDate.getTime())) {
-      // Masa aktif berlaku sampai pukul 23:59:59 pada tanggal tersebut
+  if (KUNCI_MANUAL) {
+    isExpired = true;
+  } else if (TANGGAL_KADALUWARSA) {
+    var parts = String(TANGGAL_KADALUWARSA).trim().split(/[-/]/);
+    if (parts.length === 3) {
+      // Format dd-MM-yyyy
+      var expiryDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      // Berlaku sampai akhir hari pukul 23:59:59 WIB
       expiryDate.setHours(23, 59, 59, 999);
       if (date.getTime() > expiryDate.getTime()) {
         isExpired = true;
@@ -100,7 +83,7 @@ function doGet(e) {
     }
   }
 
-  // JIKA SUDAH KEDALUWARSA / HABIS MASA SEWA:
+  // JIKA SUDAH KEDALUWARSA / HABIS MASA SEWA / DIKUNCI MANUAL:
   if (isExpired) {
     // 1. Jika diakses dari Web Dashboard
     if (action === "getUsers" || action === "getAllLogSheets" || action === "addTeacher" || action === "editTeacher" || action === "deleteTeacher" || action === "requestEnroll" || action === "checkEnrollStatus") {
