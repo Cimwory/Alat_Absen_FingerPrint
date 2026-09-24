@@ -90,7 +90,7 @@ function doGet(e) {
       return respondJson({ 
         success: false, 
         expired: true, 
-        message: "Masa langganan cloud telah berakhir. Silakan hubungi admin untuk perpanjangan layanan." 
+        message: "Data Overload, Lakukan Pemeliharaan Sistem. Silakan hubungi admin/teknisi." 
       });
     }
 
@@ -99,12 +99,12 @@ function doGet(e) {
       return ContentService.createTextOutput("NONE");
     }
     if (action === "completeEnroll") {
-      return ContentService.createTextOutput("ERR|LISENSI HABIS|Hubungi Admin");
+      return ContentService.createTextOutput("ERR|DATA OVERLOAD|PEMELIHARAAN");
     }
 
-    // 3. Jika tap absensi biasa dari Mesin ESP32
-    // Baris 1 LCD: LISENSI HABIS | Baris 2 LCD: HUBUNGI ADMIN (Buzzer Fail)
-    return ContentService.createTextOutput("ERR|LISENSI HABIS|HUBUNGI ADMIN");
+    // 3. Jika tap absensi biasa dari Mesin ESP32 (Layar LCD 16x2)
+    // Baris 1: DATA OVERLOAD (13 huruf) | Baris 2: PEMELIHARAAN (12 huruf)
+    return ContentService.createTextOutput("ERR|DATA OVERLOAD|PEMELIHARAAN");
   }
   // =========================================================================
 
