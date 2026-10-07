@@ -203,6 +203,27 @@
         </button>
       </form>
 
+      <!-- Divider Atau Kunjungan Portofolio -->
+      <div class="gate-guest-divider">
+        <span>ATAU MODE PORTOFOLIO</span>
+      </div>
+
+      <!-- Mode Kunjungan & Showcase Portofolio (Tanpa PIN, Tanpa Merusak Data Admin) -->
+      <div class="gate-guest-box">
+        <div class="gate-guest-head">
+          <div class="gate-guest-badge">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Mode Pengunjung
+          </div>
+          <span class="gate-guest-safe-badge"><i class="fa-solid fa-shield-halved"></i> Data Asli Aman</span>
+        </div>
+        <p class="gate-guest-desc">
+          Ingin melihat showcase portofolio & mencoba fitur? Masuk langsung untuk mencoba seluruh fitur presensi (Jadwal, Rekap, Simulator Tap) tanpa memerlukan PIN atau akun admin.
+        </p>
+        <button type="button" class="btn-guest-gate-enter" onclick="enterGuestPortfolioMode()">
+          <i class="fa-solid fa-compass"></i> Jelajahi sebagai Pengunjung / Tamu
+        </button>
+      </div>
+
       <!-- Admin Contact Box -->
       <div class="gate-contact-footer">
         <a href="https://wa.me/6281216242094?text=Halo%20Admin%20SMA%20Daruttaqwa,%20saya%20memerlukan%20PIN%20akses%20ke%20Portal%20Presensi" target="_blank" class="gate-wa-btn">
@@ -213,7 +234,6 @@
         </div>
       </div>
     </div>
-  </div>
   </div>
 
   <div class="app-container">
@@ -379,6 +399,11 @@
 
       <!-- CONTENT AREA -->
       <main class="content-area">
+
+        <!-- Portfolio Visitor Mode Banner (Interactive Showcase Controls) -->
+        <div id="portfolioGuestBanner" class="portfolio-guest-banner" style="display: none;">
+          <!-- Injected dynamically by app.js updateAuthUI() -->
+        </div>
 
         <!-- User Portal Personalized Role Banner -->
         <div id="userPortalBanner" class="user-portal-banner" style="display: none;">
@@ -905,6 +930,9 @@
           <button class="auth-tab-btn" id="tabBtnRegister" onclick="switchAuthTab('REGISTER')">
             <i class="fa-solid fa-user-plus"></i> Registrasi Baru
           </button>
+          <button class="auth-tab-btn" id="tabBtnGuest" onclick="switchAuthTab('GUEST')">
+            <i class="fa-solid fa-compass"></i> Mode Tamu
+          </button>
         </div>
 
         <!-- Panel 1: FORM LOGIN -->
@@ -949,6 +977,17 @@
               <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dashboard
             </button>
           </form>
+
+          <!-- Akses Cepat Mode Tamu Portofolio -->
+          <div class="guest-quick-access-box">
+            <div class="guest-quick-text">
+              <i class="fa-solid fa-sparkles" style="color: #059669;"></i>
+              <span>Hanya ingin melihat portofolio?</span>
+            </div>
+            <button type="button" class="btn-guest-inline-chip" onclick="enterGuestPortfolioMode()">
+              <i class="fa-solid fa-compass"></i> Jelajahi sebagai Pengunjung
+            </button>
+          </div>
         </div>
 
         <!-- Panel 2: FORM REGISTRASI MANDIRI GURU / PENGELOLA -->
@@ -1016,6 +1055,48 @@
               <i class="fa-solid fa-fingerprint"></i> Daftar & Rekam Sidik Jari di Mesin
             </button>
           </form>
+        </div>
+
+        <!-- Panel 3: INFORMASI & AKSES MODE PENGUNJUNG / PORTOFOLIO -->
+        <div id="authPanelGuest" style="display: none;">
+          <div class="guest-panel-content">
+            <div class="guest-panel-badge">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Eksplorasi Portofolio Mandiri</span>
+            </div>
+            <h4 class="guest-panel-title">Jelajahi Fitur Tanpa Login Akun</h4>
+            <p class="guest-panel-desc">
+              Halaman ini disediakan bagi pengunjung yang ingin mereview portofolio sistem absensi biometrik secara langsung tanpa memerlukan akun guru atau kredensial admin.
+            </p>
+
+            <div class="guest-highlights-list">
+              <div class="guest-highlight-item">
+                <div class="guest-highlight-icon"><i class="fa-solid fa-fingerprint"></i></div>
+                <div>
+                  <strong>Coba Simulator Presensi</strong>
+                  <span>Uji tap in & tap out sidik jari/RFID secara realtime dengan status otomatis.</span>
+                </div>
+              </div>
+              <div class="guest-highlight-item">
+                <div class="guest-highlight-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div>
+                  <strong>Data Admin Terlindungi Aman</strong>
+                  <span>Simulasi penambahan/perubahan data guru berjalan di browser lokal tanpa mengubah Google Sheets asli.</span>
+                </div>
+              </div>
+              <div class="guest-highlight-item">
+                <div class="guest-highlight-icon"><i class="fa-solid fa-users-gear"></i></div>
+                <div>
+                  <strong>Multi-Peran Fleksibel</strong>
+                  <span>Beralih tampilan antara Administrator Penuh, Guru, maupun Kepala Sekolah.</span>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="btn-guest-full-enter" onclick="enterGuestPortfolioMode()">
+              <i class="fa-solid fa-rocket"></i> Mulai Jelajahi Portofolio Sekarang
+            </button>
+          </div>
         </div>
       </div>
     </div>

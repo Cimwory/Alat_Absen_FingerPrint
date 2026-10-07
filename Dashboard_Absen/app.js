@@ -130,6 +130,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSimulatorSelect();
   initMobileDock();
 
+  // Pulihkan sesi Mode Tamu jika sebelumnya aktif dalam browser
+  const isGuestActive = sessionStorage.getItem('portfolio_guest_mode') === 'true';
+  if (isGuestActive && !getCurrentUser()) {
+    const savedGuestUser = {
+      nik: "GUEST_PORTFOLIO",
+      name: "Pengunjung Portofolio",
+      role: "ADMIN",
+      roleLabel: "Tamu (Simulasi Admin)",
+      category: "ADMIN",
+      teacherId: "4",
+      isGuest: true,
+      photo: "https://ui-avatars.com/api/?name=Guest+Portfolio&background=006c49&color=fff&size=150&bold=true"
+    };
+    setCurrentUser(savedGuestUser);
+  }
+
   if (!isWebsiteGateUnlocked()) {
     // WEBSITE TERKUNCI:
     // Tampilkan Lock Gate SEKETIKA. Jangan panggil loadLiveGoogleSheetData(),
@@ -138,10 +154,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const splashEl = document.getElementById('splashScreen');
     if (splashEl) splashEl.style.display = 'none';
   } else {
-    // WEBSITE SUDAH TERBUKA (Dalam sesi yang sama):
+    // WEBSITE SUDAH TERBUKA (Dalam sesi yang sama atau Mode Tamu):
     initAuthLockScreen();
     const dataPromise = loadLiveGoogleSheetData();
     await runSplashScreen(dataPromise);
+    saveInitialDataSnapshots();
     renderAllViews();
     startLiveSync();
   }
@@ -1168,6 +1185,47 @@ async function handleSaveTeacherManual() {
     id = getSuggestedNextId(device);
   }
 
+  // PENGAMAN & SIMULASI MODE TAMU PORTOFOLIO:
+  const currentUser = getCurrentUser();
+  if (currentUser && currentUser.isGuest) {
+    if (mode === 'ADD') {
+      const nipNum = parseInt(String(id).replace(/\D/g, '')) || Math.floor(Math.random() * 8999 + 1000);
+      const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${category === 'PENGAJAR' ? '059669' : '4f46e5'}&color=fff&size=150&bold=true`;
+      const newGuru = {
+        id: id,
+        nip: `1985${String(nipNum).padStart(4, '0')} 201${nipNum % 10} 1 001`,
+        name: name,
+        role: role || (category === 'PENGAJAR' ? 'Guru Mapel' : 'Staf Pengurus'),
+        subject: role || (category === 'PENGAJAR' ? 'Guru Mapel' : 'Staf Pengurus'),
+        category: category,
+        sensorType: sensor,
+        photo: photoUrl,
+        scheduleDays: ["Senin", "Rabu", "Jumat"],
+        scheduleDetails: [
+          { day: "Senin", time: "07:00 - 12:30", subject: role || 'Mapel', class: "SMA Daruttaqwa", room: "Ruang Kelas" },
+          { day: "Rabu", time: "07:00 - 12:30", subject: role || 'Mapel', class: "SMA Daruttaqwa", room: "Ruang Kelas" },
+          { day: "Jumat", time: "07:00 - 11:30", subject: role || 'Mapel', class: "SMA Daruttaqwa", room: "Ruang Kelas" }
+        ]
+      };
+      masterGuru.unshift(newGuru);
+      showToast(`[Mode Portofolio] Guru "${name}" berhasil ditambahkan di sesi simulasi! (Google Sheets asli tetap aman)`, 'success');
+    } else {
+      const target = masterGuru.find(g => String(g.id) === String(originalId || id));
+      if (target) {
+        target.name = name;
+        target.role = role || target.role;
+        target.subject = role || target.subject;
+        target.category = category;
+        target.sensorType = sensor;
+      }
+      showToast(`[Mode Portofolio] Data guru "${name}" diperbarui di browser tanpa mengubah spreadsheet admin.`, 'success');
+    }
+    closeModal('teacherFormModal');
+    initSimulatorSelect();
+    renderAllViews();
+    return;
+  }
+
   const btn = document.getElementById('btnSaveTeacherManual');
   const origText = btn.innerHTML;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
@@ -1219,6 +1277,13 @@ async function handleStartCloudEnroll() {
 
   if (!name) {
     showToast('Silakan masukkan nama lengkap guru terlebih dahulu!', 'warning');
+    return;
+  }
+
+  // PENGAMAN & SIMULASI MODE TAMU PORTOFOLIO:
+  const currentUser = getCurrentUser();
+  if (currentUser && currentUser.isGuest) {
+    simulateGuestCloudEnroll(name, role, category, sensor, device);
     return;
   }
 
@@ -1337,6 +1402,18 @@ function cancelCloudEnroll() {
 async function confirmDeleteTeacher(guruId) {
   const guru = masterGuru.find(g => String(g.id) === String(guruId));
   const name = guru ? guru.name : guruId;
+
+  // PENGAMAN & SIMULASI MODE TAMU PORTOFOLIO:
+  const currentUser = getCurrentUser();
+  if (currentUser && currentUser.isGuest) {
+    const sure = window.confirm(`[Mode Portofolio]\nHapus data guru:\n\n"${name}" (ID: ${guruId}) dari sesi simulasi?\n\n(Aksi ini hanya menghapus dari browser Anda dan TIDAK mengubah Google Sheets asli admin).`);
+    if (!sure) return;
+    masterGuru = masterGuru.filter(g => String(g.id) !== String(guruId));
+    initSimulatorSelect();
+    renderAllViews();
+    showToast(`[Mode Portofolio] Data guru "${name}" berhasil dihapus dari sesi demo!`, 'info');
+    return;
+  }
 
   const sure = window.confirm(`Apakah Anda yakin ingin menghapus data guru:\n\n"${name}" (ID: ${guruId})?\n\nData ini akan dihapus dari Database Guru di Spreadsheet.`);
   if (!sure) return;
@@ -1846,22 +1923,226 @@ function openLoginModal(initialTab = 'LOGIN') {
 function switchAuthTab(tabName) {
   const btnLogin = document.getElementById('tabBtnLogin');
   const btnRegister = document.getElementById('tabBtnRegister');
+  const btnGuest = document.getElementById('tabBtnGuest');
   const panelLogin = document.getElementById('authPanelLogin');
   const panelRegister = document.getElementById('authPanelRegister');
+  const panelGuest = document.getElementById('authPanelGuest');
 
-  if (!btnLogin || !btnRegister) return;
+  [btnLogin, btnRegister, btnGuest].forEach(b => { if (b) b.classList.remove('active'); });
+  [panelLogin, panelRegister, panelGuest].forEach(p => { if (p) p.style.display = 'none'; });
 
   if (tabName === 'LOGIN') {
-    btnLogin.classList.add('active');
-    btnRegister.classList.remove('active');
+    if (btnLogin) btnLogin.classList.add('active');
     if (panelLogin) panelLogin.style.display = 'block';
-    if (panelRegister) panelRegister.style.display = 'none';
-  } else {
-    btnRegister.classList.add('active');
-    btnLogin.classList.remove('active');
+  } else if (tabName === 'REGISTER') {
+    if (btnRegister) btnRegister.classList.add('active');
     if (panelRegister) panelRegister.style.display = 'block';
-    if (panelLogin) panelLogin.style.display = 'none';
+  } else if (tabName === 'GUEST') {
+    if (btnGuest) btnGuest.classList.add('active');
+    if (panelGuest) panelGuest.style.display = 'block';
   }
+}
+
+// ==========================================
+// 10.1 SNAPSHOT DATA DEMO & MODE PENGUNJUNG (SAFE SANDBOX)
+// ==========================================
+let initialDemoGuruSnapshot = null;
+let initialDemoLogsSnapshot = null;
+
+function saveInitialDataSnapshots() {
+  if (!initialDemoGuruSnapshot && Array.isArray(masterGuru) && masterGuru.length > 0) {
+    initialDemoGuruSnapshot = JSON.parse(JSON.stringify(masterGuru));
+  }
+  if (!initialDemoLogsSnapshot && Array.isArray(attendanceLogs) && attendanceLogs.length > 0) {
+    initialDemoLogsSnapshot = JSON.parse(JSON.stringify(attendanceLogs));
+  }
+}
+
+function restoreInitialDataSnapshots() {
+  if (initialDemoGuruSnapshot) {
+    masterGuru = JSON.parse(JSON.stringify(initialDemoGuruSnapshot));
+  }
+  if (initialDemoLogsSnapshot) {
+    attendanceLogs = JSON.parse(JSON.stringify(initialDemoLogsSnapshot));
+  }
+}
+
+/**
+ * Masuk ke Mode Pengunjung / Portofolio (Akses Langsung Tanpa PIN & Tanpa Merusak Data Asli)
+ */
+function enterGuestPortfolioMode(selectedRole = 'ADMIN') {
+  saveInitialDataSnapshots();
+
+  const guestUser = {
+    nik: "GUEST_PORTFOLIO",
+    name: "Pengunjung Portofolio",
+    role: selectedRole,
+    roleLabel: selectedRole === 'ADMIN' ? 'Tamu (Simulasi Admin)' : (selectedRole === 'GURU' ? 'Tamu (Simulasi Guru)' : 'Tamu Portofolio'),
+    category: selectedRole === 'ADMIN' ? 'ADMIN' : (selectedRole === 'GURU' ? 'PENGAJAR' : 'PENGURUS'),
+    teacherId: "4",
+    isGuest: true,
+    photo: "https://ui-avatars.com/api/?name=Guest+Portfolio&background=006c49&color=fff&size=150&bold=true"
+  };
+
+  sessionStorage.setItem('website_gate_unlocked', 'true');
+  sessionStorage.setItem('portfolio_guest_mode', 'true');
+  document.documentElement.classList.remove('portal-gate-locked');
+
+  setCurrentUser(guestUser);
+
+  const gate = document.getElementById('authGateScreen');
+  const appContainer = document.querySelector('.app-container');
+  const dock = document.getElementById('mobileDockWrapper');
+
+  if (gate) {
+    gate.classList.add('unlocked');
+    setTimeout(() => {
+      gate.style.display = 'none';
+    }, 450);
+  }
+  if (appContainer) appContainer.style.display = 'flex';
+  if (dock) dock.style.display = '';
+
+  closeModal('loginModal');
+
+  if (!masterGuru || masterGuru.length === 0) {
+    loadLiveGoogleSheetData().then(() => {
+      saveInitialDataSnapshots();
+      initSimulatorSelect();
+      renderAllViews();
+    });
+  } else {
+    initSimulatorSelect();
+    renderAllViews();
+  }
+
+  showToast("Mode Pengunjung Portofolio Aktif! Silakan mencoba seluruh fitur presensi secara aman.", "success");
+}
+
+/**
+ * Keluar dari Mode Pengunjung dan Kunci Kembali Halaman
+ */
+function exitGuestMode() {
+  if (confirm("Keluar dari Mode Pengunjung Portofolio dan kunci kembali halaman depan website?")) {
+    restoreInitialDataSnapshots();
+    sessionStorage.removeItem('portfolio_guest_mode');
+    sessionStorage.removeItem('website_gate_unlocked');
+    logoutCurrentUser();
+    document.documentElement.classList.add('portal-gate-locked');
+    initAuthLockScreen();
+    showToast("Anda telah keluar dari Mode Pengunjung. Halaman depan dikunci kembali.", "info");
+  }
+}
+
+/**
+ * Mengganti Sudut Pandang Peran Tamu (Admin, Guru, Kepsek, Tamu)
+ */
+function switchGuestDemoRole(newRole) {
+  const user = getCurrentUser();
+  if (!user || !user.isGuest) return;
+
+  user.role = newRole;
+  if (newRole === 'ADMIN') {
+    user.roleLabel = 'Tamu (Simulasi Admin)';
+    user.category = 'ADMIN';
+  } else if (newRole === 'GURU') {
+    user.roleLabel = 'Tamu (Simulasi Guru)';
+    user.category = 'PENGAJAR';
+    user.teacherId = '4';
+  } else if (newRole === 'KEPALA_SEKOLAH') {
+    user.roleLabel = 'Tamu (Simulasi Kepsek)';
+    user.category = 'PENGURUS';
+    user.teacherId = '28';
+  } else {
+    user.roleLabel = 'Pengunjung Portofolio';
+    user.category = 'GUEST';
+  }
+
+  setCurrentUser(user);
+  updateAuthUI();
+  renderAllViews();
+  showToast(`Beralih sudut pandang: ${user.roleLabel}`, "info");
+}
+
+/**
+ * Reset Data Demo ke Kondisi Awal
+ */
+function resetGuestDemoData() {
+  restoreInitialDataSnapshots();
+  initSimulatorSelect();
+  renderAllViews();
+  showToast("Data simulasi berhasil direset ke kondisi awal portofolio!", "success");
+}
+
+/**
+ * Simulasi Pendaftaran Biometrik Khusus Mode Tamu (Tanpa Mengirim Perintah Fisik ke Alat Absen)
+ */
+function simulateGuestCloudEnroll(name, role, category, sensor, device) {
+  closeModal('teacherFormModal');
+  openModal('cloudEnrollModal');
+
+  const nameEl = document.getElementById('cloudEnrollTeacherName');
+  const badgeEl = document.getElementById('cloudEnrollDeviceBadge');
+  const descEl = document.getElementById('cloudEnrollStatusDesc');
+  const progressBar = document.getElementById('cloudEnrollProgressBar');
+  const timerText = document.getElementById('cloudEnrollTimerText');
+  const scanIcon = document.getElementById('cloudScanIcon');
+
+  if (nameEl) nameEl.textContent = name;
+  if (badgeEl) badgeEl.textContent = `MESIN ${device} (SIMULASI PORTOFOLIO)`;
+  if (descEl) descEl.innerHTML = `Mode Demo Portofolio: Mengirim simulasi pendaftaran <strong>${sensor === 'RFID' ? 'Kartu RFID' : 'Sidik Jari'}</strong> ke Mesin Absen ${device}...`;
+  if (progressBar) progressBar.style.width = '25%';
+  if (timerText) timerText.textContent = 'Menghubungkan ke sensor biometrik...';
+
+  setTimeout(() => {
+    if (!document.getElementById('cloudEnrollModal').classList.contains('active')) return;
+    if (progressBar) progressBar.style.width = '60%';
+    if (timerText) timerText.textContent = 'Jari terdeteksi pada sensor...';
+    if (descEl) descEl.innerHTML = '<span style="color: #059669; font-weight: 700;">Jari Terbaca!</span> Silakan angkat dan tempelkan sekali lagi untuk konfirmasi...';
+    if (scanIcon) {
+      scanIcon.style.color = '#10b981';
+      scanIcon.style.transform = 'scale(1.2)';
+    }
+
+    setTimeout(() => {
+      if (!document.getElementById('cloudEnrollModal').classList.contains('active')) return;
+      if (progressBar) progressBar.style.width = '100%';
+      if (timerText) timerText.textContent = 'Pendaftaran Biometrik Selesai!';
+      if (descEl) descEl.innerHTML = '<span style="color: #059669; font-weight: 800; font-size: 15px;">Pendaftaran Biometrik Berhasil!</span><br><small style="color: #64748b;">(Simulasi Portofolio: Data disimpan aman di browser Anda tanpa mengubah database admin)</small>';
+
+      const newId = getSuggestedNextId(device);
+      const nipNum = parseInt(String(newId).replace(/\D/g, '')) || Math.floor(Math.random() * 8999 + 1000);
+      const newGuru = {
+        id: newId,
+        nip: `1985${String(nipNum).padStart(4, '0')} 201${nipNum % 10} 1 001`,
+        name: name,
+        role: role || (category === 'PENGAJAR' ? 'Guru Mapel' : 'Staf Pengurus'),
+        subject: role || (category === 'PENGAJAR' ? 'Guru Mapel' : 'Staf Pengurus'),
+        category: category,
+        sensorType: sensor,
+        photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${category === 'PENGAJAR' ? '059669' : '4f46e5'}&color=fff&size=150&bold=true`,
+        scheduleDays: ["Senin", "Rabu", "Jumat"],
+        scheduleDetails: [
+          { day: "Senin", time: "07:00 - 12:30", subject: role || 'Mapel', class: "SMA Daruttaqwa", room: "Ruang Kelas" },
+          { day: "Rabu", time: "07:00 - 12:30", subject: role || 'Mapel', class: "SMA Daruttaqwa", room: "Ruang Kelas" },
+          { day: "Jumat", time: "07:00 - 11:30", subject: role || 'Mapel', class: "SMA Daruttaqwa", room: "Ruang Kelas" }
+        ]
+      };
+      masterGuru.unshift(newGuru);
+      initSimulatorSelect();
+      renderAllViews();
+
+      showToast(`[Mode Portofolio] Guru "${name}" berhasil didaftarkan via simulasi sensor biometrik!`, 'success');
+
+      setTimeout(() => {
+        closeModal('cloudEnrollModal');
+        if (scanIcon) {
+          scanIcon.style.color = '';
+          scanIcon.style.transform = '';
+        }
+      }, 2000);
+    }, 1800);
+  }, 1500);
 }
 
 function togglePasswordVisibility(inputId, btn) {
@@ -1897,7 +2178,7 @@ function quickFillLogin(nik, password) {
 const CORRECT_GATE_PIN = "120170";
 
 function isWebsiteGateUnlocked() {
-  return sessionStorage.getItem('website_gate_unlocked') === 'true';
+  return sessionStorage.getItem('website_gate_unlocked') === 'true' || sessionStorage.getItem('portfolio_guest_mode') === 'true';
 }
 
 function initAuthLockScreen() {
@@ -2056,6 +2337,11 @@ function executeLogin(nik, password) {
 }
 
 function handleLogout() {
+  const user = getCurrentUser();
+  if (user && user.isGuest) {
+    exitGuestMode();
+    return;
+  }
   logoutCurrentUser();
   showToast("Anda telah keluar dari akun. Halaman dikunci.", "info");
 
@@ -2070,6 +2356,11 @@ function handleLogout() {
   }
   if (appContainer) appContainer.style.display = 'none';
   if (dock) dock.style.display = 'none';
+
+  sessionStorage.removeItem('website_gate_unlocked');
+  sessionStorage.removeItem('portfolio_guest_mode');
+  document.documentElement.classList.add('portal-gate-locked');
+  initAuthLockScreen();
 
   renderAllViews();
 }
@@ -2173,6 +2464,81 @@ function updateAuthUI() {
     switchTab('overview');
   }
 
+  const guestBanner = document.getElementById('portfolioGuestBanner');
+
+  // KONDISI 1: JIKA PENGGUNA ADALAH TAMU PORTOFOLIO
+  if (user && user.isGuest) {
+    if (banner) banner.style.display = 'none';
+    if (guestBanner) {
+      guestBanner.style.display = 'block';
+      guestBanner.innerHTML = `
+        <div class="portfolio-banner-wrap">
+          <div class="portfolio-banner-main">
+            <div class="portfolio-banner-icon-box">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="portfolio-banner-info">
+              <div class="portfolio-banner-badges">
+                <span class="portfolio-tag-guest"><i class="fa-solid fa-compass"></i> Mode Tamu Portofolio</span>
+                <span class="portfolio-tag-safe"><i class="fa-solid fa-shield-halved"></i> Data Asli Admin Terlindungi (Sandbox Mode)</span>
+              </div>
+              <h3 class="portfolio-banner-title">Eksplorasi Fitur & Portofolio Sistem Absensi</h3>
+              <p class="portfolio-banner-desc">
+                Selamat datang! Anda dapat melihat dan mencoba seluruh fitur presensi (Jadwal, Rekapitulasi, Simulator Tap Masuk/Pulang, hingga Tambah Guru). Seluruh aksi uji coba disimulasikan secara aman di browser tanpa mengubah database asli Google Sheets admin.
+              </p>
+            </div>
+          </div>
+
+          <div class="portfolio-banner-actions">
+            <!-- Selector Peran Simulasi -->
+            <div class="portfolio-role-control">
+              <label for="guestRoleSelector"><i class="fa-solid fa-users-gear"></i> Sudut Pandang Simulasi:</label>
+              <select id="guestRoleSelector" onchange="switchGuestDemoRole(this.value)" class="guest-role-dropdown">
+                <option value="ADMIN" ${user.role === 'ADMIN' ? 'selected' : ''}>👑 Administrator (Akses Penuh + Mesin)</option>
+                <option value="GURU" ${user.role === 'GURU' ? 'selected' : ''}>👨‍🏫 Guru Pengajar (Portal Privat)</option>
+                <option value="KEPALA_SEKOLAH" ${user.role === 'KEPALA_SEKOLAH' ? 'selected' : ''}>🎓 Kepala Sekolah (Monitoring)</option>
+                <option value="GUEST" ${user.role === 'GUEST' ? 'selected' : ''}>👀 Tamu Umum (Lihat Saja)</option>
+              </select>
+            </div>
+
+            <div class="portfolio-buttons-row">
+              <button type="button" class="btn-guest-sim" onclick="openSimulatorModal()" title="Coba Simulator Absensi">
+                <i class="fa-solid fa-fingerprint"></i> Coba Tap Presensi
+              </button>
+              <button type="button" class="btn-guest-reset" onclick="resetGuestDemoData()" title="Reset data simulasi ke awal">
+                <i class="fa-solid fa-rotate-right"></i> Reset Data Demo
+              </button>
+              <button type="button" class="btn-guest-exit" onclick="exitGuestMode()" title="Keluar dari mode demo">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar Mode Tamu
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (container) {
+      container.innerHTML = `
+        <div class="user-profile-capsule guest-capsule">
+          <img src="${user.photo}" alt="${user.name}" class="user-capsule-avatar">
+          <div class="user-capsule-meta">
+            <div class="user-capsule-name" title="${user.name}">Tamu Portofolio</div>
+            <span class="badge-role badge-role-guest">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Mode Pengunjung
+            </span>
+          </div>
+          <button class="btn-capsule-logout" onclick="exitGuestMode()" title="Keluar Mode Tamu">
+            <i class="fa-solid fa-power-off"></i>
+          </button>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  // Jika bukan mode tamu, sembunyikan guest banner
+  if (guestBanner) guestBanner.style.display = 'none';
+
   if (!user) {
     // Mode Tamu / Belum Login
     if (container) {
@@ -2188,13 +2554,18 @@ function updateAuthUI() {
         <div class="portal-banner-content">
           <i class="fa-solid fa-circle-info portal-banner-icon"></i>
           <div>
-            <div class="portal-banner-title">Portal Presensi Terbuka (Mode Tamu)</div>
+            <div class="portal-banner-title">Portal Presensi Terbuka</div>
             <div class="portal-banner-sub">Silakan Masuk menggunakan NIK & Password untuk mengakses portal pribadi guru atau wewenang administrator.</div>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="openLoginModal('LOGIN')" style="font-size: 11.5px; padding: 6px 12px; white-space: nowrap;">
-          Masuk Akun
-        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline-emerald" onclick="enterGuestPortfolioMode()" style="font-size: 11.5px; padding: 6px 12px; white-space: nowrap;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Mode Tamu
+          </button>
+          <button class="btn btn-primary" onclick="openLoginModal('LOGIN')" style="font-size: 11.5px; padding: 6px 12px; white-space: nowrap;">
+            Masuk Akun
+          </button>
+        </div>
       `;
     }
     return;

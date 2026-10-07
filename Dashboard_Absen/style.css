@@ -3471,5 +3471,500 @@ html.portal-gate-locked #mobileDockWrapper {
   display: none !important;
 }
 
+/* ==========================================================================
+   MODE PENGUNJUNG / PORTOFOLIO (SHOWCASE & SAFE SANDBOX)
+   ========================================================================== */
+
+/* Divider "ATAU MODE PORTOFOLIO" pada Layar Kunci */
+.gate-guest-divider {
+  position: relative;
+  text-align: center;
+  margin: 16px 0 12px;
+}
+
+.gate-guest-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.3), transparent);
+}
+
+.gate-guest-divider span {
+  position: relative;
+  background: #ffffff;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #059669;
+  text-transform: uppercase;
+}
+
+/* Kartu Mode Pengunjung di Layar Gerbang */
+.gate-guest-box {
+  background: linear-gradient(135deg, rgba(209, 250, 229, 0.5) 0%, rgba(240, 253, 244, 0.8) 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.35);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  text-align: left;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+}
+
+.gate-guest-box:hover {
+  border-color: #10b981;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.15);
+  transform: translateY(-1px);
+}
+
+.gate-guest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.gate-guest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #065f46;
+}
+
+.gate-guest-safe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #059669;
+  background: #ffffff;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.gate-guest-desc {
+  font-size: 11.5px;
+  color: #334155;
+  line-height: 1.45;
+  margin: 0 0 12px 0;
+}
+
+.btn-guest-gate-enter {
+  width: 100%;
+  padding: 11px 16px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-guest-gate-enter:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35);
+}
+
+.btn-guest-gate-enter:active {
+  transform: translateY(0);
+}
+
+/* Callout di Modal Login (Form Tab 1) */
+.guest-quick-access-box {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.guest-quick-text {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-guest-inline-chip {
+  padding: 6px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #065f46;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-guest-inline-chip:hover {
+  background: #059669;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Tab 3 Modal Login: Mode Pengunjung Panel */
+.guest-panel-content {
+  text-align: center;
+  padding: 6px 4px;
+}
+
+.guest-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.guest-panel-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--primary);
+  margin: 0 0 6px 0;
+}
+
+.guest-panel-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.guest-highlights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.guest-highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.guest-highlight-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.guest-highlight-item strong {
+  display: block;
+  font-size: 12.5px;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.guest-highlight-item span {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.btn-guest-full-enter {
+  width: 100%;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #004532, #006c49);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 69, 50, 0.25);
+  transition: all 0.25s ease;
+}
+
+.btn-guest-full-enter:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 69, 50, 0.35);
+  background: linear-gradient(135deg, #005a41, #00875c);
+}
+
+/* ==========================================================================
+   PORTFOLIO GUEST BANNER (TOP MAIN CONTENT SHOWCASE)
+   ========================================================================== */
+.portfolio-guest-banner {
+  background: linear-gradient(135deg, #003728 0%, #004532 50%, #065f46 100%);
+  border: 1px solid rgba(110, 251, 190, 0.35);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  color: #ffffff;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px -4px rgba(0, 69, 50, 0.25), 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+  animation: modalScaleIn 0.35s ease;
+}
+
+.portfolio-guest-banner::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(108, 248, 187, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.portfolio-banner-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.portfolio-banner-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.portfolio-banner-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #6ffbbe;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-banner-info {
+  flex: 1;
+}
+
+.portfolio-banner-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.portfolio-tag-guest {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #6ffbbe;
+  color: #004532;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+.portfolio-tag-safe {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+.portfolio-banner-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+}
+
+.portfolio-banner-desc {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 900px;
+}
+
+.portfolio-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.portfolio-role-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.portfolio-role-control label {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guest-role-dropdown {
+  background: rgba(0, 30, 20, 0.6);
+  border: 1.5px solid rgba(110, 251, 190, 0.5);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.guest-role-dropdown:hover,
+.guest-role-dropdown:focus {
+  border-color: #6ffbbe;
+  background: rgba(0, 30, 20, 0.8);
+}
+
+.guest-role-dropdown option {
+  background: #004532;
+  color: #ffffff;
+}
+
+.portfolio-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-guest-sim {
+  padding: 7px 14px;
+  background: #6ffbbe;
+  color: #004532;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-guest-sim:hover {
+  background: #a7f3d0;
+  transform: translateY(-1px);
+}
+
+.btn-guest-reset {
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-guest-reset:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-guest-exit {
+  padding: 7px 12px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-guest-exit:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+}
+
+/* Badge Peran Tamu di Topbar Capsule */
+.badge-role-guest {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15));
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
 
 

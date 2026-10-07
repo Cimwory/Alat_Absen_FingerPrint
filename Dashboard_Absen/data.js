@@ -95,9 +95,32 @@ function parseGvizResponse(rawText) {
 }
 
 /**
+ * Cek apakah sesi saat ini sedang dalam Mode Tamu / Portofolio
+ */
+function isCurrentGuestUser() {
+  try {
+    const raw = localStorage.getItem('auth_active_user');
+    const u = raw ? JSON.parse(raw) : null;
+    return Boolean(u && u.isGuest);
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Panggilan API ke Google Apps Script via JSONP (Bebas CORS di semua browser & mobile)
  */
 function callGasApi(params) {
+  // PENGAMAN DATABASE ADMIN: Jika pengguna adalah Tamu Portofolio, cegah perubahan ke Google Apps Script!
+  if (isCurrentGuestUser() && params.action !== 'checkEnrollStatus') {
+    console.warn(`[Mode Portofolio Sandbox] Memblokir aksi mutasi '${params.action}' agar tidak merusak database admin.`);
+    return Promise.resolve({
+      success: true,
+      simulated: true,
+      message: "[Mode Portofolio] Aksi disimulasikan di browser Anda. Database Google Sheets asli admin aman terlindungi!"
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const callbackName = 'gasCb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
     const script = document.createElement('script');
@@ -246,8 +269,13 @@ async function loadLiveGoogleSheetData() {
       });
 
       if (parsedTeachers.length > 0) {
-        masterGuru = parsedTeachers;
-        try { localStorage.setItem('cache_master_guru', JSON.stringify(masterGuru)); } catch (e) {}
+        if (isCurrentGuestUser() && masterGuru && masterGuru.length > 0) {
+          // Dalam mode tamu, pertahankan data lokal yang telah ditambah/diubah oleh pengunjung
+          console.log("[Mode Portofolio] Data guru Google Sheets diperbarui di latar belakang tanpa menimpa sesi demo.");
+        } else {
+          masterGuru = parsedTeachers;
+          try { localStorage.setItem('cache_master_guru', JSON.stringify(masterGuru)); } catch (e) {}
+        }
       }
     }
 
